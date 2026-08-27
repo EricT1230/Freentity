@@ -36,9 +36,21 @@ test('loads every reading page from the repository-local Figma asset', async ({ 
   expect(asset.headers()['content-type']).toBe('image/jpeg');
 
   await openInvitation(page);
-  await expect(page.locator('.design-page img[src="./assets/figma-invitation.jpeg"]')).toHaveCount(4);
-  for (const image of await page.locator('.design-page img').all()) {
-    expect(await image.evaluate((element) => element.complete && element.naturalWidth === 1174 && element.naturalHeight === 4096)).toBe(true);
+  const readingPages = page.locator('.design-page');
+  await expect(readingPages.locator('img[src="./assets/figma-invitation.jpeg"]')).toHaveCount(4);
+
+  for (let index = 0; index < 4; index += 1) {
+    const readingPage = readingPages.nth(index);
+    const image = readingPage.locator('img');
+    await readingPage.scrollIntoViewIfNeeded();
+    await expect.poll(
+      () => image.evaluate((element) => ({
+        complete: element.complete,
+        naturalWidth: element.naturalWidth,
+        naturalHeight: element.naturalHeight,
+      })),
+      { timeout: 10_000 },
+    ).toEqual({ complete: true, naturalWidth: 1174, naturalHeight: 4096 });
   }
 });
 
