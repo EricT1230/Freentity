@@ -11,7 +11,9 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const BACK_HOLD_DURATION = 560;
 const FLAP_HOLD_DURATION = 520;
 const OPENING_FALLBACK_DURATION = 10000;
-const REDUCED_OPENING_DURATION = 20;
+const REDUCED_BACK_HOLD_DURATION = 180;
+const REDUCED_FLAP_HOLD_DURATION = 180;
+const REDUCED_OPENING_FALLBACK_DURATION = 4000;
 
 let revealObserver;
 let openingFallbackTimer;
@@ -98,13 +100,19 @@ function advanceOpening(event) {
 
   if (event.currentTarget === envelopeShell && root.dataset.openingPhase === 'flip') {
     root.dataset.openingPhase = 'back';
-    scheduleOpeningPhase('flap', BACK_HOLD_DURATION);
+    scheduleOpeningPhase(
+      'flap',
+      reducedMotion.matches ? REDUCED_BACK_HOLD_DURATION : BACK_HOLD_DURATION,
+    );
     return;
   }
 
   if (event.currentTarget === envelopeFlap && root.dataset.openingPhase === 'flap') {
     root.dataset.openingPhase = 'flap-open';
-    scheduleOpeningPhase('card', FLAP_HOLD_DURATION);
+    scheduleOpeningPhase(
+      'card',
+      reducedMotion.matches ? REDUCED_FLAP_HOLD_DURATION : FLAP_HOLD_DURATION,
+    );
     return;
   }
 
@@ -119,14 +127,14 @@ export function openInvitation() {
   }
 
   resetScrollPosition();
-  root.dataset.openingPhase = reducedMotion.matches ? 'departing' : 'flip';
+  root.dataset.openingPhase = 'flip';
   root.dataset.state = 'opening';
   gate.setAttribute('aria-busy', 'true');
   openButton.disabled = true;
 
   openingFallbackTimer = window.setTimeout(
     finishOpening,
-    reducedMotion.matches ? REDUCED_OPENING_DURATION : OPENING_FALLBACK_DURATION,
+    reducedMotion.matches ? REDUCED_OPENING_FALLBACK_DURATION : OPENING_FALLBACK_DURATION,
   );
 }
 
@@ -163,8 +171,4 @@ reducedMotion.addEventListener('change', () => {
   revealObserver?.disconnect();
   revealObserver = undefined;
   revealAllPages();
-
-  if (root.dataset.state === 'opening' && openingFallbackTimer) {
-    finishOpening();
-  }
 });

@@ -86,7 +86,7 @@ test('opens and reads cleanly in an actual iPhone WebKit device profile', async 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
   await page.getByRole('button', { name: 'Open' }).tap();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
   const firstPage = await page.locator('[data-page="1"]').boundingBox();

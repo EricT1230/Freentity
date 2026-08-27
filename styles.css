@@ -167,43 +167,62 @@ html[data-state="opening"] .gate {
 .envelope-face--front {
   z-index: 2;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 17%);
+  border: 1px solid rgb(235 241 237 / 16%);
+  border-radius: 5px;
   background:
-    linear-gradient(122deg, rgb(255 255 255 / 8%) 0%, transparent 31%),
-    repeating-linear-gradient(98deg, rgb(255 255 255 / 1.5%) 0 1px, transparent 1px 4px),
-    linear-gradient(148deg, #244a3c 0%, #173c2f 54%, #0f2c23 100%);
+    radial-gradient(circle at 22% 8%, rgb(255 255 255 / 9%), transparent 34%),
+    repeating-linear-gradient(104deg, rgb(255 255 255 / 1.5%) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(17deg, rgb(0 0 0 / 1.6%) 0 1px, transparent 1px 5px),
+    linear-gradient(145deg, #21483a 0%, #15382d 52%, #0d281f 100%);
   box-shadow:
-    0 26px 36px rgb(15 44 35 / 24%),
-    inset 0 1px rgb(255 255 255 / 17%),
-    inset 0 -1px rgb(0 0 0 / 20%);
+    0 31px 43px rgb(15 44 35 / 28%),
+    0 9px 15px rgb(9 29 23 / 14%),
+    inset 0 1px rgb(255 255 255 / 20%),
+    inset 0 -2px 2px rgb(0 0 0 / 25%);
   opacity: 1;
   transform: rotateY(0deg) translateZ(1px);
   transition: opacity 0ms linear 500ms;
 }
 
+.envelope-face--front::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    radial-gradient(circle at 28% 76%, rgb(255 255 255 / 3.5%) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 68% 32%, rgb(0 0 0 / 4%) 0 .8px, transparent 1.4px);
+  background-size: 7px 9px, 9px 8px;
+  content: "";
+  opacity: .72;
+  pointer-events: none;
+}
+
 .envelope-face--front::after {
   position: absolute;
+  z-index: 4;
   inset: 7px;
-  border: 1px solid rgb(217 225 220 / 12%);
-  border-radius: 4px;
-  box-shadow: inset 0 0 18px rgb(5 25 18 / 10%);
+  border: 1px solid rgb(224 232 227 / 9%);
+  border-radius: 2px;
+  box-shadow:
+    inset 1px 1px rgb(255 255 255 / 8%),
+    inset -1px -1px rgb(0 0 0 / 13%),
+    inset 0 0 21px rgb(5 25 18 / 12%);
   content: "";
   pointer-events: none;
 }
 
 .envelope-front__brand {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: 50%;
-  left: 10%;
+  left: clamp(25px, 8.5%, 62px);
   display: flex;
   align-items: center;
-  gap: clamp(10px, 3vw, 18px);
+  gap: clamp(13px, 3.2vw, 22px);
   transform: translateY(-50%);
 }
 
-.envelope-front__logo,
-.envelope-front__motif {
+.envelope-front__logo {
   display: block;
   height: auto;
   max-width: none;
@@ -212,39 +231,44 @@ html[data-state="opening"] .gate {
 }
 
 .envelope-front__logo {
-  width: clamp(50px, 15vw, 72px);
+  width: clamp(58px, 14vw, 88px);
   aspect-ratio: 1;
-  border: 1px solid rgb(255 255 255 / 52%);
-  border-radius: 50%;
-  background: #f8faf8;
-  box-shadow:
-    0 5px 14px rgb(5 25 18 / 24%),
-    0 0 0 4px rgb(255 255 255 / 7%);
-  filter: grayscale(1) contrast(1.08);
+  filter: none;
+  mix-blend-mode: normal;
   opacity: 1;
 }
 
 .envelope-front__name {
-  color: #f8faf8;
-  font-family: Baskerville, "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.35rem, 6vw, 2rem);
-  font-weight: 400;
-  letter-spacing: .09em;
+  color: #edf1ee;
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.35rem, 6.2vw, 2.4rem);
+  font-weight: 500;
+  letter-spacing: .025em;
   line-height: 1;
-  text-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+  text-shadow:
+    0 1px rgb(255 255 255 / 15%),
+    0 3px 11px rgb(0 0 0 / 28%);
 }
 
-.envelope-front__motif {
+.envelope-front__emboss {
   position: absolute;
-  z-index: 1;
-  top: -21%;
-  right: -9%;
-  width: 58%;
+  z-index: 2;
+  top: -8%;
+  right: -10%;
+  display: block;
+  width: 62%;
   aspect-ratio: 1;
-  filter: grayscale(1) invert(1) contrast(2.2);
-  mix-blend-mode: screen;
-  opacity: .12;
-  transform: rotate(-7deg) scale(1.08);
+  background: linear-gradient(145deg, #255243 0%, #14372c 52%, #092119 100%);
+  filter:
+    drop-shadow(-2px -2px 1px rgb(238 244 240 / 27%))
+    drop-shadow(3px 3px 2px rgb(0 0 0 / 62%))
+    drop-shadow(7px 8px 9px rgb(0 0 0 / 17%));
+  -webkit-mask: url("./assets/freentity-logo.png") center / contain no-repeat;
+  mask: url("./assets/freentity-logo.png") center / contain no-repeat;
+  opacity: .9;
+  transform: rotate(-2deg) scale(1.12);
+  transform-origin: 72% 48%;
+  pointer-events: none;
 }
 
 .envelope-face--back {
@@ -609,18 +633,48 @@ html[data-state="opening"] .invitation {
     scroll-behavior: auto;
   }
 
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-    animation-delay: 0ms !important;
+  .gate__open {
+    transition-duration: 260ms;
+  }
+
+  .envelope-shell {
+    transition-duration: 420ms;
+  }
+
+  .envelope__flap {
+    transition-duration: 340ms, 0ms;
+  }
+
+  .envelope__letter {
+    transition-duration: 480ms, 480ms, 480ms;
+  }
+
+  .envelope__seal {
+    transition-duration: 140ms, 180ms;
+  }
+
+  .gate__prompt {
+    transition-duration: 160ms, 200ms;
   }
 
   .gate__prompt strong,
   .gate__prompt strong::after {
     animation: none !important;
+  }
+
+  html[data-opening-phase="departing"] .gate {
+    animation-duration: 220ms;
+  }
+
+  .design-page {
+    transition-duration: .01ms;
+  }
+
+  @keyframes gate-departure {
+    to {
+      opacity: 0;
+      transform: none;
+    }
   }
 }
 

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const sourceAsset = './assets/figma-invitation.jpeg';
 const envelopeCardAsset = './assets/envelope-card.jpg';
-const envelopeLogoAsset = './assets/freentity-logo.jpg';
+const envelopeLogoAsset = './assets/freentity-logo.png';
 const slices = [
   { page: '1', start: 0, end: 339 },
   { page: '2', start: 339, end: 724 },
@@ -17,7 +17,7 @@ async function openInvitation(page, { reducedMotion = false } = {}) {
   await page.goto('./');
   await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', {
-    timeout: reducedMotion ? 500 : 8000,
+    timeout: reducedMotion ? 4000 : 8000,
   });
 }
 
@@ -96,7 +96,11 @@ test('presents the closed envelope front with a floating Open invitation', async
   await expect(page.locator('.envelope-face--front')).toBeVisible();
   await expect(page.locator('.envelope-face--back')).toHaveCount(1);
   await expect(page.locator('.envelope-front__logo')).toHaveAttribute('src', envelopeLogoAsset);
+  await expect(page.locator('.envelope-front__logo')).toHaveJSProperty('naturalWidth', 292);
+  await expect(page.locator('.envelope-front__logo')).toHaveJSProperty('naturalHeight', 292);
   await expect(page.locator('.envelope-front__name')).toHaveText('Freentity');
+  await expect(page.locator('.envelope-front__motif')).toHaveCount(0);
+  await expect(page.locator('.envelope-front__emboss')).toHaveCount(1);
   await expect(page.locator('.envelope__letter img')).toHaveAttribute('src', envelopeCardAsset);
   await expect(page.locator('.envelope__letter img')).toHaveAttribute('width', '1280');
   await expect(page.locator('.envelope__letter img')).toHaveAttribute('height', '720');
@@ -108,6 +112,8 @@ test('presents the closed envelope front with a floating Open invitation', async
     const buttonStyle = getComputedStyle(button);
     const promptStyle = getComputedStyle(button.querySelector('.gate__prompt strong'));
     const cardStyle = getComputedStyle(button.querySelector('.envelope__letter img'));
+    const logoStyle = getComputedStyle(button.querySelector('.envelope-front__logo'));
+    const embossStyle = getComputedStyle(button.querySelector('.envelope-front__emboss'));
 
     return {
       buttonBackground: buttonStyle.backgroundColor,
@@ -115,6 +121,13 @@ test('presents the closed envelope front with a floating Open invitation', async
       promptBackground: promptStyle.backgroundColor,
       promptBorderWidth: promptStyle.borderTopWidth,
       cardFilter: cardStyle.filter,
+      logoFilter: logoStyle.filter,
+      logoMixBlendMode: logoStyle.mixBlendMode,
+      logoOpacity: logoStyle.opacity,
+      embossFilter: embossStyle.filter,
+      embossMaskImage: embossStyle.maskImage === 'none'
+        ? embossStyle.webkitMaskImage
+        : embossStyle.maskImage,
     };
   });
   expect(presentation.buttonBackground).toBe('rgba(0, 0, 0, 0)');
@@ -122,6 +135,11 @@ test('presents the closed envelope front with a floating Open invitation', async
   expect(presentation.promptBackground).toBe('rgba(0, 0, 0, 0)');
   expect(presentation.promptBorderWidth).toBe('0px');
   expect(presentation.cardFilter).toContain('grayscale(1)');
+  expect(presentation.logoFilter).toBe('none');
+  expect(presentation.logoMixBlendMode).toBe('normal');
+  expect(presentation.logoOpacity).toBe('1');
+  expect(presentation.embossFilter).toContain('drop-shadow');
+  expect(presentation.embossMaskImage).toContain('freentity-logo.png');
 
   const envelope = await page.locator('.envelope-shell').boundingBox();
   const prompt = await page.locator('.gate__prompt').boundingBox();
@@ -227,8 +245,34 @@ for (const key of ['Enter', 'Space']) {
   });
 }
 
-test('opens immediately when reduced motion is requested', async ({ page }) => {
-  await openInvitation(page, { reducedMotion: true });
+test('keeps a shorter but complete opening sequence when reduced motion is requested', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+  await observeOpeningTransitions(page);
+
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'opening');
+
+  await waitForOpeningTransition(page, 'shell', 'transitionend');
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'back');
+
+  await waitForOpeningTransition(page, 'flap', 'transitionend');
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap-open');
+
+  await waitForOpeningTransition(page, 'letter', 'transitionstart');
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'card');
+  await waitForOpeningTransition(page, 'letter', 'transitionend');
+
+  const transitions = await page.evaluate(() => window.__openingTransitions);
+  const elapsedFor = (stage) => transitions.find(
+    (event) => event.stage === stage && event.type === 'transitionend',
+  ).elapsedTime;
+  expect(elapsedFor('shell')).toBeGreaterThanOrEqual(.35);
+  expect(elapsedFor('flap')).toBeGreaterThanOrEqual(.28);
+  expect(elapsedFor('letter')).toBeGreaterThanOrEqual(.4);
+
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
   expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(1);
 });
 

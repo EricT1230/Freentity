@@ -3,17 +3,24 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 const expectedFigmaAssetSha256 = 'a61257abec55ce2736aded16299a2110d51fd5cceb57b7f3e3f37c38a8a7e659';
+const expectedOfficialLogoSha256 = '2582061e74f0166c3dd4151f878271c7b0e5825add755646af06a30e41fb9a4d';
 
 async function openInvitation(page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('./');
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 }
 
 test('ships the exact original image bytes exported from the Figma frame', async () => {
   const asset = await readFile('assets/figma-invitation.jpeg');
   expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedFigmaAssetSha256);
+});
+
+test('ships the official full-color Freentity logo without changing its pixels', async () => {
+  const asset = await readFile('assets/freentity-logo.png').catch(() => null);
+  expect(asset, 'the official logo PNG must be present in the static site').not.toBeNull();
+  expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedOfficialLogoSha256);
 });
 
 test('keeps the complete invitation transcript available to assistive technology', async ({ page }) => {

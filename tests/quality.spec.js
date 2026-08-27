@@ -70,7 +70,7 @@ test('has no automatically detectable WCAG A or AA violations', async ({ page })
   expect(violationSummary(sealed)).toEqual([]);
 
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
   const open = await new AxeBuilder({ page }).withTags(accessibilityTags).analyze();
   expect(violationSummary(open)).toEqual([]);
 });

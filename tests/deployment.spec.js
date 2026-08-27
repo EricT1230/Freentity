@@ -32,7 +32,7 @@ test('builds a minimal GitHub Pages artifact containing only the exact design an
     '.nojekyll',
     'assets/envelope-card.jpg',
     'assets/figma-invitation.jpeg',
-    'assets/freentity-logo.jpg',
+    'assets/freentity-logo.png',
     'index.html',
     'script.js',
     'styles.css',
@@ -51,7 +51,7 @@ test('all runtime assets resolve below the repository path', async ({ request })
     './styles.css',
     './script.js',
     './assets/envelope-card.jpg',
-    './assets/freentity-logo.jpg',
+    './assets/freentity-logo.png',
     './assets/figma-invitation.jpeg',
   ];
 

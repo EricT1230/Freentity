@@ -5,7 +5,7 @@ test('renders the reconstructed 402 by 1404 reader pixel-for-pixel from the appr
   await page.setViewportSize({ width: 402, height: 874 });
   await page.goto('./');
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 
   await page.addStyleTag({
     content: `

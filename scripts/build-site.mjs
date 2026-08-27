@@ -7,7 +7,7 @@ const runtimeFiles = [
   'styles.css',
   'script.js',
   'assets/envelope-card.jpg',
-  'assets/freentity-logo.jpg',
+  'assets/freentity-logo.png',
   'assets/figma-invitation.jpeg',
 ];
 

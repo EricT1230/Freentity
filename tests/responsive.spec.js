@@ -36,7 +36,7 @@ for (const viewport of viewports) {
     expect(prompt.y + prompt.height).toBeLessThanOrEqual(viewport.height - 8);
 
     await page.getByRole('button', { name: 'Open' }).click();
-    await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+    await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 
     const openMetrics = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -70,7 +70,7 @@ test('uses a substantial centered reading canvas on desktop', async ({ page }) =
   expect(sealedEnvelope.width).toBeGreaterThanOrEqual(680);
 
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 
   const reader = await page.locator('.reader').boundingBox();
   const firstPage = await page.locator('[data-page="1"]').boundingBox();
@@ -87,7 +87,7 @@ test('reflows through portrait, landscape, and portrait without drift', async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 
   for (const viewport of [
     { width: 844, height: 390 },
@@ -154,7 +154,7 @@ test('keeps the Figma design proportional when browser text size changes on 320p
   await page.goto('./');
   await page.addStyleTag({ content: 'html { font-size: 125% !important; }' });
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   const firstPage = await page.locator('[data-page="1"]').boundingBox();
