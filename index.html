@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant" data-state="sealed">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#365f4d">
+    <meta name="description" content="帆益科技新廠落成開幕暨技術發表邀請函">
+    <title>帆益科技｜新廠落成開幕暨技術發表</title>
+    <link rel="preload" href="./assets/invitation.webp" as="image" type="image/webp">
+    <link rel="stylesheet" href="./styles.css">
+    <noscript>
+      <style>
+        html { overflow-y: auto !important; }
+        .envelope-stage { display: none !important; }
+        .invitation { display: block !important; opacity: 1 !important; transform: none !important; }
+        .utility-tray { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        [data-action="share"], .share-status, .manual-share { display: none !important; }
+      </style>
+    </noscript>
+  </head>
+  <body>
+    <main>
+      <section class="envelope-stage" aria-labelledby="envelope-title">
+        <div class="envelope-scene">
+          <p class="envelope__brand" aria-hidden="true">FREENTITY</p>
+          <h1 id="envelope-title">新廠落成開幕暨技術發表</h1>
+          <p class="envelope__recipient">誠摯邀請您</p>
+          <div class="envelope" aria-hidden="true">
+            <div class="envelope__back"></div>
+            <div class="envelope__paper-preview"></div>
+            <div class="envelope__front"></div>
+            <div class="envelope__flap"></div>
+          </div>
+          <button id="open-invitation" class="open-button" type="button">開啟邀請</button>
+        </div>
+      </section>
+
+      <article id="invitation" class="invitation" aria-labelledby="invitation-title" tabindex="-1">
+        <h2 id="invitation-title" class="sr-only">帆益科技新廠落成開幕暨技術發表邀請函</h2>
+        <picture class="invitation__picture">
+          <source srcset="./assets/invitation.webp" type="image/webp">
+          <img class="invitation__artwork" src="./assets/invitation.png" width="1206" height="4212" alt="帆益科技新廠落成開幕暨技術發表完整邀請函">
+        </picture>
+        <section class="invitation__transcript sr-only" aria-label="邀請函文字內容">
+          <h3>六年，我們創造了無限的可能</h3>
+          <p>誠摯邀請你，與我們共同開啟嶄新篇章。</p>
+          <p>時間：2026 年 10 月 4 日星期日，14:00 起自由入場。</p>
+          <p>地點：320 桃園市中壢區中園路 192 號 5 樓之 1、2。</p>
+          <h3>投入 15 年的研究，因為相信 3D 列印可以改變製造業</h3>
+          <p>我一直深信厚植而萌發，實驗培育著我的底氣，也讓帆益的技術年年突破。2026 年，我們完成階段性的目標，站到了我們理想的高度。感謝一路相挺的夥伴、不吝支持的貴人前輩、相信我們的客戶。今天的帆益，因為有你。10 月 4 日，讓我們一起見證過去的累積，以及接下來走向哪裡。</p>
+          <h3>現場首度公開</h3>
+          <p>挑戰全台第一的高速度、高精度、高效率智慧製程。</p>
+          <h3>當日流程</h3>
+          <ol>
+            <li>14:00 開放入場、迎賓；茶點備妥，歡迎隨到隨入。</li>
+            <li>14:30 開幕儀式。</li>
+            <li>15:00 新廠導覽、產線實機展示、技術發表；三場同步進行，不分梯次，皆可自由參與。</li>
+            <li>16:00 交流時間。</li>
+            <li>16:30 活動結束。</li>
+          </ol>
+          <h3>地點與交通</h3>
+          <p>新廠地址：320 桃園市中壢區中園路 192 號 5 樓之 1、2。請直接開往地下室停車場，當天開放來賓臨停。本場為開放式茶會，自由入場，無須事先回覆。產線區域禁止攝影，敬請配合現場人員引導。</p>
+          <p>順祝時祺，萬事勝意。帆益科技陳定閎、陳薇敬邀。</p>
+        </section>
+
+        <nav class="utility-tray" aria-label="邀請函工具">
+          <a class="utility-button" data-action="map" href="https://www.google.com/maps/search/?api=1&amp;query=320%20桃園市中壢區中園路%20192%20號%205%20樓之%201%20、2" target="_blank" rel="noopener noreferrer">地圖導航</a>
+          <a class="utility-button" data-action="calendar" href="./assets/event.ics" download="freentity-2026-10-04.ics">加入行事曆</a>
+          <button class="utility-button" data-action="share" type="button">分享邀請</button>
+        </nav>
+        <p id="share-status" class="share-status" aria-live="polite"></p>
+        <div id="manual-share" class="manual-share" hidden>
+          <label for="share-url">請手動複製邀請函網址</label>
+          <input id="share-url" type="text" readonly>
+        </div>
+      </article>
+    </main>
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
