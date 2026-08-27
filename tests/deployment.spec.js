@@ -31,8 +31,6 @@ test('builds a minimal Pages artifact with no custom-domain or test files', asyn
   expect(await listFiles('_site')).toEqual([
     '.nojekyll',
     'assets/event.ics',
-    'assets/invitation.png',
-    'assets/invitation.webp',
     'index.html',
     'script.js',
     'styles.css',
@@ -41,6 +39,7 @@ test('builds a minimal Pages artifact with no custom-domain or test files', asyn
   const html = await readFile('_site/index.html', 'utf8');
   expect(html).not.toContain('figma.com/api/mcp/asset');
   expect(html).not.toContain('CNAME');
+  expect(html).not.toMatch(/assets\/invitation\.(?:png|webp)/);
 
   const calendar = await readFile('_site/assets/event.ics', 'utf8');
   expect(calendar.endsWith('\r\n')).toBe(true);
@@ -52,8 +51,6 @@ test('all runtime assets resolve below the repository path', async ({ request })
     './',
     './styles.css',
     './script.js',
-    './assets/invitation.webp',
-    './assets/invitation.png',
     './assets/event.ics',
   ];
 

@@ -6,8 +6,6 @@ const runtimeFiles = [
   'index.html',
   'styles.css',
   'script.js',
-  'assets/invitation.webp',
-  'assets/invitation.png',
   'assets/event.ics',
 ];
 

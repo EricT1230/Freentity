@@ -39,6 +39,25 @@ test('passes the exact event details to native sharing', async ({ page }) => {
   });
 });
 
+test('shares a clean top-level URL instead of a chapter anchor', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', {
+      value: async (data) => { window.__sharedInvitation = data; },
+      configurable: true,
+    });
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('./#closing');
+  await page.getByRole('button', { name: '開啟邀請' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(1);
+  await page.locator('#closing').scrollIntoViewIfNeeded();
+  await page.getByRole('button', { name: '分享邀請' }).click();
+
+  const sharedUrl = await page.evaluate(() => window.__sharedInvitation.url);
+  expect(sharedUrl).toBe(page.url().split('#')[0]);
+});
+
 test('copies the URL when native sharing is unavailable', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
@@ -64,16 +83,16 @@ test('reveals a manual URL when share and clipboard both fail', async ({ page })
   await expect(page.locator('#share-url')).toHaveValue(page.url());
 });
 
-test('shows readable event text when artwork cannot load', async ({ page }) => {
-  await page.route('**/assets/invitation.*', (route) => route.abort());
+test('renders the complete invitation without a raster artwork dependency', async ({ page }) => {
+  await page.route(/\.(?:png|webp|jpe?g)(?:\?.*)?$/i, (route) => route.abort());
   await openInvitation(page);
-  await expect(page.locator('.invitation__picture')).toBeHidden();
-  const transcript = page.locator('.invitation__transcript');
-  await expect(transcript).toBeVisible();
-  await expect(page.getByText('2026 年 10 月 4 日星期日')).toBeVisible();
-  const fallbackBox = await transcript.boundingBox();
-  expect(fallbackBox.width).toBeGreaterThan(280);
-  expect(fallbackBox.height).toBeGreaterThan(300);
+  await expect(page.locator('.invitation__artwork')).toHaveCount(0);
+  await expect(page.locator('#invitation > section[data-chapter]')).toHaveCount(6);
+  await expect(page.locator('#cover')).toContainText('2026 / 10 / 04');
+  await expect(page.locator('#cover')).toContainText('桃園市中壢區中園路 192 號');
+  await expect(page.locator('#rundown')).toContainText('無須事先回覆');
+  await expect(page.getByRole('heading', { name: '當日流程' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: '地點與交通' })).toBeAttached();
 });
 
 test('shows the invitation when JavaScript is disabled', async ({ browser }) => {
@@ -81,7 +100,7 @@ test('shows the invitation when JavaScript is disabled', async ({ browser }) => 
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4173/Freentity/');
   await expect(page.locator('#invitation')).toBeVisible();
-  await expect(page.getByRole('link', { name: '地圖導航' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '開啟地圖導航' })).toBeVisible();
   await expect(page.getByRole('link', { name: '加入行事曆' })).toBeVisible();
   await expect(page.getByRole('button', { name: '分享邀請' })).toBeHidden();
   await page.mouse.wheel(0, 1000);

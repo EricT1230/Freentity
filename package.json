@@ -8,6 +8,7 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:responsive": "playwright test tests/responsive.spec.js",
+    "test:webkit": "playwright test tests/invitation.spec.js tests/responsive.spec.js tests/utilities.spec.js tests/quality.spec.js --browser=webkit",
     "test:visual": "playwright test tests/visual.spec.js"
   },
   "devDependencies": {

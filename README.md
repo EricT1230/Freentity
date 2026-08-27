@@ -17,11 +17,12 @@ node tests/static-server.mjs
 ```powershell
 npm test
 npm run test:responsive
+npm run test:webkit
 npm run test:visual
 npm run build
 ```
 
-多尺寸視覺證據會寫入 `test-results/visual/`，此目錄不會納入 Git。`npm run build` 只會把公開網站需要的七個檔案組裝到 `_site/`。
+多尺寸視覺證據會寫入 `test-results/visual/`，此目錄不會納入 Git。`npm run build` 只會把公開網站需要的五個檔案組裝到 `_site/`。邀請內容由六個語意化 HTML 章節組成，不依賴整張 PDF 或長圖才能閱讀。
 
 ## GitHub Pages
 

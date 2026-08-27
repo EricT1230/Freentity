@@ -1,24 +1,70 @@
 const root = document.documentElement;
+const gate = document.querySelector('#invitation-gate');
 const openButton = document.querySelector('#open-invitation');
 const invitation = document.querySelector('#invitation');
+const chapters = [...document.querySelectorAll('[data-chapter]')];
 const shareButton = document.querySelector('[data-action="share"]');
 const shareStatus = document.querySelector('#share-status');
 const manualShare = document.querySelector('#manual-share');
 const shareUrl = document.querySelector('#share-url');
-const invitationArtwork = document.querySelector('.invitation__artwork');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-const OPENING_DURATION = 1500;
-const REDUCED_OPENING_DURATION = 80;
+const OPENING_DURATION = 1550;
+const REDUCED_OPENING_DURATION = 40;
 
-function setState(state) {
-  root.dataset.state = state;
+let revealObserver;
+let openingTimer;
+
+function resetScrollPosition() {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+}
+
+function revealAllChapters() {
+  chapters.forEach((chapter) => chapter.classList.add('is-visible'));
+}
+
+function activateChapterReveals() {
+  if (reducedMotion.matches || !('IntersectionObserver' in window)) {
+    revealAllChapters();
+    return;
+  }
+
+  chapters[0]?.classList.add('is-visible');
+
+  revealObserver ??= new IntersectionObserver(
+    (entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    },
+    {
+      rootMargin: '0px 0px -12% 0px',
+      threshold: 0.14,
+    },
+  );
+
+  chapters.slice(1).forEach((chapter) => revealObserver.observe(chapter));
 }
 
 function finishOpening() {
-  setState('open');
-  root.removeAttribute('aria-busy');
-  invitation.focus({ preventScroll: true });
+  openingTimer = undefined;
+  resetScrollPosition();
+  root.dataset.state = 'open';
+  gate.setAttribute('aria-hidden', 'true');
+  gate.removeAttribute('aria-busy');
+  invitation.setAttribute('aria-hidden', 'false');
+  invitation.removeAttribute('inert');
+  activateChapterReveals();
+
+  window.requestAnimationFrame(() => {
+    resetScrollPosition();
+    invitation.focus({ preventScroll: true });
+  });
 }
 
 export function openInvitation() {
@@ -26,26 +72,26 @@ export function openInvitation() {
     return;
   }
 
-  setState('opening');
-  root.setAttribute('aria-busy', 'true');
+  resetScrollPosition();
+  root.dataset.state = 'opening';
+  gate.setAttribute('aria-busy', 'true');
   openButton.disabled = true;
 
-  invitation.scrollIntoView({
-    behavior: reducedMotion.matches ? 'auto' : 'smooth',
-    block: 'start',
-  });
-
-  window.setTimeout(
+  openingTimer = window.setTimeout(
     finishOpening,
     reducedMotion.matches ? REDUCED_OPENING_DURATION : OPENING_DURATION,
   );
 }
 
-openButton.addEventListener('click', openInvitation);
+function getInvitationUrl() {
+  const url = new URL(window.location.href);
+  url.hash = '';
+  return url.href;
+}
 
 function revealManualShare() {
   manualShare.hidden = false;
-  shareUrl.value = window.location.href;
+  shareUrl.value = getInvitationUrl();
   shareUrl.focus();
   shareUrl.select();
   shareStatus.textContent = '請複製下方網址分享邀請函。';
@@ -55,7 +101,7 @@ export async function shareInvitation() {
   const shareData = {
     title: document.title,
     text: '誠摯邀請您參加帆益科技新廠落成開幕暨技術發表。',
-    url: window.location.href,
+    url: getInvitationUrl(),
   };
 
   if (typeof navigator.share === 'function') {
@@ -83,41 +129,23 @@ export async function shareInvitation() {
   revealManualShare();
 }
 
+invitation.setAttribute('aria-hidden', 'true');
+invitation.setAttribute('inert', '');
+gate.setAttribute('aria-hidden', 'false');
+openButton.addEventListener('click', openInvitation);
 shareButton.addEventListener('click', shareInvitation);
 
-function showArtworkFallback() {
-  invitation.classList.add('invitation--artwork-missing');
-}
-
-invitationArtwork.addEventListener('error', showArtworkFallback);
-
-if (invitationArtwork.complete && invitationArtwork.naturalWidth === 0) {
-  showArtworkFallback();
-}
-
-let parallaxFrame = 0;
-
-function syncParallax() {
-  parallaxFrame = 0;
-
-  if (reducedMotion.matches) {
-    invitation.style.setProperty('--scroll-shift', '0px');
+reducedMotion.addEventListener('change', () => {
+  if (!reducedMotion.matches) {
     return;
   }
 
-  const invitationTop = invitation.offsetTop;
-  const shift = Math.max(-10, Math.min(10, (window.scrollY - invitationTop) * 0.015));
-  invitation.style.setProperty('--scroll-shift', `${shift}px`);
-}
+  revealObserver?.disconnect();
+  revealObserver = undefined;
+  revealAllChapters();
 
-function requestParallaxSync() {
-  if (parallaxFrame) {
-    return;
+  if (root.dataset.state === 'opening' && openingTimer) {
+    window.clearTimeout(openingTimer);
+    finishOpening();
   }
-
-  parallaxFrame = window.requestAnimationFrame(syncParallax);
-}
-
-window.addEventListener('scroll', requestParallaxSync, { passive: true });
-reducedMotion.addEventListener('change', syncParallax);
-syncParallax();
+});
