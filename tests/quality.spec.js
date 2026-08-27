@@ -28,8 +28,8 @@ test('loads and opens without browser errors or failed same-origin requests', as
   });
 
   await page.goto('./');
-  await page.getByRole('button', { name: '開啟邀請' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 2500 });
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
 
   expect(browserErrors).toEqual([]);
   expect(failedRequests).toEqual([]);
@@ -69,7 +69,7 @@ test('has no automatically detectable WCAG A or AA violations', async ({ page })
   const sealed = await new AxeBuilder({ page }).withTags(accessibilityTags).analyze();
   expect(violationSummary(sealed)).toEqual([]);
 
-  await page.getByRole('button', { name: '開啟邀請' }).click();
+  await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 500 });
   const open = await new AxeBuilder({ page }).withTags(accessibilityTags).analyze();
   expect(violationSummary(open)).toEqual([]);

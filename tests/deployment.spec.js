@@ -26,11 +26,13 @@ test.afterEach(async () => {
   await rm('_site', { recursive: true, force: true });
 });
 
-test('builds a minimal Pages artifact with no custom-domain or test files', async () => {
+test('builds a minimal GitHub Pages artifact containing only the exact design and static reader', async () => {
   await execFile(process.execPath, ['scripts/build-site.mjs']);
   expect(await listFiles('_site')).toEqual([
     '.nojekyll',
-    'assets/event.ics',
+    'assets/envelope-card.jpg',
+    'assets/figma-invitation.jpeg',
+    'assets/freentity-logo.jpg',
     'index.html',
     'script.js',
     'styles.css',
@@ -40,10 +42,7 @@ test('builds a minimal Pages artifact with no custom-domain or test files', asyn
   expect(html).not.toContain('figma.com/api/mcp/asset');
   expect(html).not.toContain('CNAME');
   expect(html).not.toMatch(/assets\/invitation\.(?:png|webp)/);
-
-  const calendar = await readFile('_site/assets/event.ics', 'utf8');
-  expect(calendar.endsWith('\r\n')).toBe(true);
-  expect(calendar.replaceAll('\r\n', '')).not.toContain('\n');
+  expect(html).not.toContain('event.ics');
 });
 
 test('all runtime assets resolve below the repository path', async ({ request }) => {
@@ -51,7 +50,9 @@ test('all runtime assets resolve below the repository path', async ({ request })
     './',
     './styles.css',
     './script.js',
-    './assets/event.ics',
+    './assets/envelope-card.jpg',
+    './assets/freentity-logo.jpg',
+    './assets/figma-invitation.jpeg',
   ];
 
   for (const path of runtimePaths) {

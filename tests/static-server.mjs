@@ -10,6 +10,8 @@ const contentTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.ics', 'text/calendar; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
+  ['.jpeg', 'image/jpeg'],
+  ['.jpg', 'image/jpeg'],
   ['.png', 'image/png'],
   ['.webp', 'image/webp'],
 ]);

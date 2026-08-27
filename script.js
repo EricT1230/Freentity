@@ -2,34 +2,36 @@ const root = document.documentElement;
 const gate = document.querySelector('#invitation-gate');
 const openButton = document.querySelector('#open-invitation');
 const invitation = document.querySelector('#invitation');
-const chapters = [...document.querySelectorAll('[data-chapter]')];
-const shareButton = document.querySelector('[data-action="share"]');
-const shareStatus = document.querySelector('#share-status');
-const manualShare = document.querySelector('#manual-share');
-const shareUrl = document.querySelector('#share-url');
+const designPages = [...document.querySelectorAll('.design-page')];
+const envelopeShell = document.querySelector('.envelope-shell');
+const envelopeFlap = document.querySelector('.envelope__flap');
+const envelopeLetter = document.querySelector('.envelope__letter');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-const OPENING_DURATION = 1550;
-const REDUCED_OPENING_DURATION = 40;
+const BACK_HOLD_DURATION = 560;
+const FLAP_HOLD_DURATION = 520;
+const OPENING_FALLBACK_DURATION = 10000;
+const REDUCED_OPENING_DURATION = 20;
 
 let revealObserver;
-let openingTimer;
+let openingFallbackTimer;
+let phaseTimer;
 
 function resetScrollPosition() {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
-function revealAllChapters() {
-  chapters.forEach((chapter) => chapter.classList.add('is-visible'));
+function revealAllPages() {
+  designPages.forEach((designPage) => designPage.classList.add('is-visible'));
 }
 
-function activateChapterReveals() {
+function activatePageReveals() {
+  designPages[0]?.classList.add('is-visible');
+
   if (reducedMotion.matches || !('IntersectionObserver' in window)) {
-    revealAllChapters();
+    revealAllPages();
     return;
   }
-
-  chapters[0]?.classList.add('is-visible');
 
   revealObserver ??= new IntersectionObserver(
     (entries, observer) => {
@@ -43,28 +45,72 @@ function activateChapterReveals() {
       });
     },
     {
-      rootMargin: '0px 0px -12% 0px',
-      threshold: 0.14,
+      rootMargin: '0px 0px -8% 0px',
+      threshold: 0.12,
     },
   );
 
-  chapters.slice(1).forEach((chapter) => revealObserver.observe(chapter));
+  designPages.slice(1).forEach((designPage) => revealObserver.observe(designPage));
+}
+
+function clearOpeningTimers() {
+  window.clearTimeout(openingFallbackTimer);
+  window.clearTimeout(phaseTimer);
+  openingFallbackTimer = undefined;
+  phaseTimer = undefined;
+}
+
+function scheduleOpeningPhase(phase, delay) {
+  window.clearTimeout(phaseTimer);
+  phaseTimer = window.setTimeout(() => {
+    phaseTimer = undefined;
+    if (root.dataset.state === 'opening') {
+      root.dataset.openingPhase = phase;
+    }
+  }, delay);
 }
 
 function finishOpening() {
-  openingTimer = undefined;
+  if (root.dataset.state === 'open') {
+    return;
+  }
+
+  clearOpeningTimers();
   resetScrollPosition();
   root.dataset.state = 'open';
+  delete root.dataset.openingPhase;
   gate.setAttribute('aria-hidden', 'true');
   gate.removeAttribute('aria-busy');
   invitation.setAttribute('aria-hidden', 'false');
   invitation.removeAttribute('inert');
-  activateChapterReveals();
+  activatePageReveals();
 
   window.requestAnimationFrame(() => {
     resetScrollPosition();
     invitation.focus({ preventScroll: true });
   });
+}
+
+function advanceOpening(event) {
+  if (event.propertyName !== 'transform' || root.dataset.state !== 'opening') {
+    return;
+  }
+
+  if (event.currentTarget === envelopeShell && root.dataset.openingPhase === 'flip') {
+    root.dataset.openingPhase = 'back';
+    scheduleOpeningPhase('flap', BACK_HOLD_DURATION);
+    return;
+  }
+
+  if (event.currentTarget === envelopeFlap && root.dataset.openingPhase === 'flap') {
+    root.dataset.openingPhase = 'flap-open';
+    scheduleOpeningPhase('card', FLAP_HOLD_DURATION);
+    return;
+  }
+
+  if (event.currentTarget === envelopeLetter && root.dataset.openingPhase === 'card') {
+    root.dataset.openingPhase = 'departing';
+  }
 }
 
 export function openInvitation() {
@@ -73,67 +119,41 @@ export function openInvitation() {
   }
 
   resetScrollPosition();
+  root.dataset.openingPhase = reducedMotion.matches ? 'departing' : 'flip';
   root.dataset.state = 'opening';
   gate.setAttribute('aria-busy', 'true');
   openButton.disabled = true;
 
-  openingTimer = window.setTimeout(
+  openingFallbackTimer = window.setTimeout(
     finishOpening,
-    reducedMotion.matches ? REDUCED_OPENING_DURATION : OPENING_DURATION,
+    reducedMotion.matches ? REDUCED_OPENING_DURATION : OPENING_FALLBACK_DURATION,
   );
 }
 
-function getInvitationUrl() {
-  const url = new URL(window.location.href);
-  url.hash = '';
-  return url.href;
-}
-
-function revealManualShare() {
-  manualShare.hidden = false;
-  shareUrl.value = getInvitationUrl();
-  shareUrl.focus();
-  shareUrl.select();
-  shareStatus.textContent = '請複製下方網址分享邀請函。';
-}
-
-export async function shareInvitation() {
-  const shareData = {
-    title: document.title,
-    text: '誠摯邀請您參加帆益科技新廠落成開幕暨技術發表。',
-    url: getInvitationUrl(),
-  };
-
-  if (typeof navigator.share === 'function') {
-    try {
-      await navigator.share(shareData);
-      shareStatus.textContent = '分享視窗已開啟。';
-      return;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
-      }
-    }
-  }
-
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(shareData.url);
-      shareStatus.textContent = '邀請函網址已複製。';
-      return;
-    } catch {
-      // Continue to the visible manual-copy fallback.
-    }
-  }
-
-  revealManualShare();
-}
-
-invitation.setAttribute('aria-hidden', 'true');
-invitation.setAttribute('inert', '');
-gate.setAttribute('aria-hidden', 'false');
 openButton.addEventListener('click', openInvitation);
-shareButton.addEventListener('click', shareInvitation);
+envelopeShell.addEventListener('transitionend', advanceOpening);
+envelopeFlap.addEventListener('transitionend', advanceOpening);
+envelopeLetter.addEventListener('transitionend', advanceOpening);
+gate.addEventListener('animationend', (event) => {
+  if (event.animationName === 'gate-departure' && root.dataset.openingPhase === 'departing') {
+    finishOpening();
+  }
+});
+
+if (root.dataset.state === 'open') {
+  gate.setAttribute('aria-hidden', 'true');
+  invitation.setAttribute('aria-hidden', 'false');
+  invitation.removeAttribute('inert');
+  revealAllPages();
+} else {
+  invitation.setAttribute('aria-hidden', 'true');
+  invitation.setAttribute('inert', '');
+  gate.setAttribute('aria-hidden', 'false');
+}
+
+root.dataset.invitationReady = 'true';
+window.clearTimeout(window.__invitationFailOpenTimer);
+delete window.__invitationFailOpenTimer;
 
 reducedMotion.addEventListener('change', () => {
   if (!reducedMotion.matches) {
@@ -142,10 +162,9 @@ reducedMotion.addEventListener('change', () => {
 
   revealObserver?.disconnect();
   revealObserver = undefined;
-  revealAllChapters();
+  revealAllPages();
 
-  if (root.dataset.state === 'opening' && openingTimer) {
-    window.clearTimeout(openingTimer);
+  if (root.dataset.state === 'opening' && openingFallbackTimer) {
     finishOpening();
   }
 });
