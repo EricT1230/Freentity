@@ -33,6 +33,7 @@ test('builds a minimal GitHub Pages artifact containing only the exact design an
     'assets/envelope-card.jpg',
     'assets/figma-invitation.jpeg',
     'assets/freentity-logo.png',
+    'assets/social-preview.jpg',
     'index.html',
     'script.js',
     'styles.css',
@@ -53,10 +54,59 @@ test('all runtime assets resolve below the repository path', async ({ request })
     './assets/envelope-card.jpg',
     './assets/freentity-logo.png',
     './assets/figma-invitation.jpeg',
+    './assets/social-preview.jpg',
   ];
 
   for (const path of runtimePaths) {
     const response = await request.get(path);
     expect(response.ok(), path).toBe(true);
   }
+});
+
+test('publishes an absolute social preview for link unfurlers', async ({ page, request }) => {
+  const siteUrl = 'https://erict1230.github.io/Freentity/';
+  const previewUrl = `${siteUrl}assets/social-preview.jpg`;
+
+  await page.goto('./');
+
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', siteUrl);
+  await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'website');
+  await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute('content', 'zh_TW');
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', '帆益科技 Freentity');
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', siteUrl);
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    'content',
+    '帆益科技｜新廠落成開幕暨技術發表',
+  );
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    'content',
+    '誠摯邀請您參與帆益科技新廠落成開幕暨技術發表。',
+  );
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', previewUrl);
+  await expect(page.locator('meta[property="og:image:secure_url"]')).toHaveAttribute('content', previewUrl);
+  await expect(page.locator('meta[property="og:image:type"]')).toHaveAttribute('content', 'image/jpeg');
+  await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute('content', '1920');
+  await expect(page.locator('meta[property="og:image:height"]')).toHaveAttribute('content', '1080');
+  await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
+    'content',
+    '帆益科技新廠落成開幕暨技術發表邀請函封面',
+  );
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
+    'content',
+    '帆益科技｜新廠落成開幕暨技術發表',
+  );
+  await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute(
+    'content',
+    '誠摯邀請您參與帆益科技新廠落成開幕暨技術發表。',
+  );
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', previewUrl);
+  await expect(page.locator('meta[name="twitter:image:alt"]')).toHaveAttribute(
+    'content',
+    '帆益科技新廠落成開幕暨技術發表邀請函封面',
+  );
+
+  const preview = await request.get('./assets/social-preview.jpg');
+  expect(preview.ok()).toBe(true);
+  expect(preview.headers()['content-type']).toBe('image/jpeg');
 });
