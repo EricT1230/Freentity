@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('renders the reconstructed 402 by 1404 reader pixel-for-pixel from the approved Figma frame', async ({ page }) => {
+test('renders the reconstructed 402 by 1404 reader pixel-for-pixel from the approved PDF', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 402, height: 874 });
   await page.goto('./');
@@ -15,7 +15,7 @@ test('renders the reconstructed 402 by 1404 reader pixel-for-pixel from the appr
   });
 
   const reader = page.locator('#invitation-reader');
-  await expect(reader).toHaveScreenshot('approved-figma-frame.png', {
+  await expect(reader).toHaveScreenshot('approved-invitation-frame.png', {
     animations: 'disabled',
     maxDiffPixels: 0,
   });

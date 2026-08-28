@@ -33,6 +33,7 @@ test('builds a minimal GitHub Pages artifact containing only the exact design an
     'assets/envelope-card.jpg',
     'assets/figma-invitation.jpeg',
     'assets/freentity-logo.png',
+    'assets/social-preview-20260828.jpg',
     'assets/social-preview.jpg',
     'index.html',
     'script.js',
@@ -55,6 +56,7 @@ test('all runtime assets resolve below the repository path', async ({ request })
     './assets/freentity-logo.png',
     './assets/figma-invitation.jpeg',
     './assets/social-preview.jpg',
+    './assets/social-preview-20260828.jpg',
   ];
 
   for (const path of runtimePaths) {
@@ -65,7 +67,7 @@ test('all runtime assets resolve below the repository path', async ({ request })
 
 test('publishes an absolute social preview for link unfurlers', async ({ page, request }) => {
   const siteUrl = 'https://erict1230.github.io/Freentity/';
-  const previewUrl = `${siteUrl}assets/social-preview.jpg`;
+  const previewUrl = `${siteUrl}assets/social-preview-20260828.jpg`;
 
   await page.goto('./');
 
@@ -106,7 +108,7 @@ test('publishes an absolute social preview for link unfurlers', async ({ page, r
     '帆益科技新廠落成開幕暨技術發表邀請函封面',
   );
 
-  const preview = await request.get('./assets/social-preview.jpg');
+  const preview = await request.get('./assets/social-preview-20260828.jpg');
   expect(preview.ok()).toBe(true);
   expect(preview.headers()['content-type']).toBe('image/jpeg');
 });

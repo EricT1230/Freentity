@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-const expectedFigmaAssetSha256 = 'a61257abec55ce2736aded16299a2110d51fd5cceb57b7f3e3f37c38a8a7e659';
+const expectedInvitationAssetSha256 = '61301fe1fff7623c45ac11e3c482663783337af6d284bb829f4627cd5e0f7f76';
 const expectedOfficialLogoSha256 = '2582061e74f0166c3dd4151f878271c7b0e5825add755646af06a30e41fb9a4d';
 const expectedEnvelopeCardSha256 = 'f3e6869dc3741caebc657c58bf42b141e71c4c8dd66cba9dc442b8b59d52a9f6';
 const expectedSocialPreviewSha256 = '1076d31968bf3b25ebc3efe415bea4e0efb7ab6b148bae9db8e7a648b2d98f24';
@@ -14,9 +14,9 @@ async function openInvitation(page) {
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 }
 
-test('ships the exact original image bytes exported from the Figma frame', async () => {
+test('ships the exact invitation artwork rendered from the approved PDF', async () => {
   const asset = await readFile('assets/figma-invitation.jpeg');
-  expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedFigmaAssetSha256);
+  expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedInvitationAssetSha256);
 });
 
 test('ships the official full-color Freentity logo without changing its pixels', async () => {
@@ -35,6 +35,14 @@ test('ships the supplied social preview artwork without changing its pixels', as
   expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedSocialPreviewSha256);
 });
 
+test('ships a cache-busting copy of the supplied social preview artwork', async () => {
+  const originalAsset = await readFile('assets/social-preview.jpg');
+  const versionedAsset = await readFile('assets/social-preview-20260828.jpg');
+
+  expect(createHash('sha256').update(versionedAsset).digest('hex')).toBe(expectedSocialPreviewSha256);
+  expect(versionedAsset.equals(originalAsset)).toBe(true);
+});
+
 test('keeps the complete invitation transcript available to assistive technology', async ({ page }) => {
   await openInvitation(page);
   const transcript = page.locator('#invitation-transcript');
@@ -49,7 +57,7 @@ test('keeps the complete invitation transcript available to assistive technology
   await expect(transcript).toContainText('帆益科技 陳定閎・陳薇 敬邀');
 });
 
-test('loads every reading page from the repository-local Figma asset', async ({ page, request }) => {
+test('loads every reading page from the repository-local invitation asset', async ({ page, request }) => {
   const asset = await request.get('./assets/figma-invitation.jpeg');
   expect(asset.ok()).toBe(true);
   expect(asset.headers()['content-type']).toBe('image/jpeg');
