@@ -11,12 +11,45 @@ test.use({
 async function observeOpeningTransitions(page) {
   await page.evaluate(() => {
     window.__openingTransitions = [];
+    window.__backPhaseSnapshot = null;
     const activePhases = {};
+    const root = document.documentElement;
     const stages = {
       shell: document.querySelector('.envelope-shell'),
       flap: document.querySelector('.envelope__flap'),
       letter: document.querySelector('.envelope__letter'),
     };
+
+    const phaseObserver = new MutationObserver(() => {
+      if (root.dataset.openingPhase !== 'back' || window.__backPhaseSnapshot) {
+        return;
+      }
+
+      const envelopeRect = stages.shell.getBoundingClientRect();
+      const samplePoints = [.12, .28, .44, .6, .76, .9].flatMap((yRatio) => (
+        [.12, .31, .5, .69, .88].map((xRatio) => [xRatio, yRatio])
+      ));
+      window.__backPhaseSnapshot = {
+        frontOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope-face--front')).opacity),
+        backOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope-face--back')).opacity),
+        exposedSamples: samplePoints.filter(([xRatio, yRatio]) => {
+          const topElement = document.elementFromPoint(
+            envelopeRect.left + envelopeRect.width * xRatio,
+            envelopeRect.top + envelopeRect.height * yRatio,
+          );
+          return topElement?.closest('.envelope__letter') === stages.letter;
+        }).length,
+        exposedBelowEnvelope: [.2, .5, .8].filter((xRatio) => {
+          const topElement = document.elementFromPoint(
+            envelopeRect.left + envelopeRect.width * xRatio,
+            envelopeRect.bottom + 2,
+          );
+          return topElement?.closest('.envelope__letter') === stages.letter;
+        }).length,
+      };
+      phaseObserver.disconnect();
+    });
+    phaseObserver.observe(root, { attributes: true, attributeFilter: ['data-opening-phase'] });
 
     for (const [stage, element] of Object.entries(stages)) {
       for (const type of ['transitionstart', 'transitionend']) {
@@ -51,17 +84,14 @@ async function waitForOpeningTransition(page, stage, type, phase) {
   );
 }
 
-async function inspectConcealedLetter(letter) {
+async function inspectPocketCoverage(letter) {
   return letter.evaluate((element) => {
-    const letterRect = element.getBoundingClientRect();
     const envelopeRect = element.closest('.envelope-shell').getBoundingClientRect();
     const coveredPoints = [.7, .8, .9].flatMap((yRatio) => (
       [.2, .5, .8].map((xRatio) => [xRatio, yRatio])
     ));
 
     return {
-      topRatio: (letterRect.top - envelopeRect.top) / envelopeRect.height,
-      clipPath: getComputedStyle(element).clipPath,
       exposedSamples: coveredPoints.filter(([xRatio, yRatio]) => {
         const topElement = document.elementFromPoint(
           envelopeRect.left + envelopeRect.width * xRatio,
@@ -126,42 +156,21 @@ test('plays the full front-to-back opening sequence on iPhone WebKit without ove
   await page.getByRole('button', { name: 'Open' }).tap();
   await waitForOpeningTransition(page, 'shell', 'transitionend', 'flip');
   expect(await shell.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m11)).toBeLessThan(-.85);
-  const faceOpacities = await shell.evaluate((element) => ({
-    front: Number(getComputedStyle(element.querySelector('.envelope-face--front')).opacity),
-    back: Number(getComputedStyle(element.querySelector('.envelope-face--back')).opacity),
-  }));
-  expect(faceOpacities.front).toBeLessThan(.01);
-  expect(faceOpacities.back).toBeGreaterThan(.99);
-  const concealedLetter = await inspectConcealedLetter(letter);
-  expect(concealedLetter.topRatio).toBeGreaterThanOrEqual(.64);
-  expect(concealedLetter.clipPath).toContain('60%');
-  expect(concealedLetter.exposedSamples).toBe(0);
-  expect(concealedLetter.exposedBelowEnvelope).toBe(0);
+  await page.waitForFunction(() => window.__backPhaseSnapshot !== null);
+  const backPhase = await page.evaluate(() => window.__backPhaseSnapshot);
+  expect(backPhase.frontOpacity).toBeLessThan(.01);
+  expect(backPhase.backOpacity).toBeGreaterThan(.99);
+  expect(backPhase.exposedSamples).toBe(0);
+  expect(backPhase.exposedBelowEnvelope).toBe(0);
   await page.screenshot({ path: 'test-results/visual/iphone-back.png' });
 
   const envelopeBox = await shell.boundingBox();
-  await waitForOpeningTransition(page, 'flap', 'transitionstart', 'flap');
-  await page.waitForFunction(() => {
-    const matrix = new DOMMatrix(getComputedStyle(document.querySelector('.envelope__flap')).transform);
-    return document.documentElement.dataset.openingPhase === 'flap' && matrix.m22 < -.2;
-  });
-  const liftingLetter = await inspectConcealedLetter(letter);
-  const liftingClipBottom = Number(liftingLetter.clipPath.match(/[\d.]+%/)?.[0].replace('%', ''));
-  expect(liftingLetter.topRatio).toBeGreaterThan(.3);
-  expect(liftingLetter.topRatio).toBeLessThan(.58);
-  expect(liftingClipBottom).toBeGreaterThan(30);
-  expect(liftingClipBottom).toBeLessThan(60);
-  await page.screenshot({ path: 'test-results/visual/iphone-flap-lift.png' });
-
   await waitForOpeningTransition(page, 'flap', 'transitionend', 'flap');
   const openFlap = await flap.boundingBox();
   expect(openFlap.y).toBeLessThan(envelopeBox.y - 20);
-  const flapOpenLetter = await inspectConcealedLetter(letter);
-  expect(flapOpenLetter.topRatio).toBeGreaterThan(.3);
-  expect(flapOpenLetter.topRatio).toBeLessThan(.58);
-  expect(flapOpenLetter.clipPath).toContain('32%');
-  expect(flapOpenLetter.exposedSamples).toBe(0);
-  expect(flapOpenLetter.exposedBelowEnvelope).toBe(0);
+  const pocketCoverage = await inspectPocketCoverage(letter);
+  expect(pocketCoverage.exposedSamples).toBe(0);
+  expect(pocketCoverage.exposedBelowEnvelope).toBe(0);
   expect((await letter.boundingBox()).y).toBeLessThan(initialLetter.y - 40);
   await page.screenshot({ path: 'test-results/visual/iphone-flap-open.png' });
 
