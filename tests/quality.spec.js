@@ -54,6 +54,12 @@ test('keeps local LCP and CLS within the browser QA budgets', async ({ page }) =
   });
 
   await page.goto('./');
+
+  // Wait for the entry rather than sleeping a fixed 500ms: a cold CI runner can
+  // paint later than that, which failed the run for a timing reason instead of a
+  // budget one. The budget itself is what this test is actually about.
+  await page.waitForFunction(() => window.__qaMetrics.lcp > 0, null, { timeout: 10_000 });
+  // Give layout shifts a window to land before reading CLS.
   await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => window.__qaMetrics);
 
