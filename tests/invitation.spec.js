@@ -125,6 +125,7 @@ test('presents the closed envelope front with a floating Open invitation', async
       logoMixBlendMode: logoStyle.mixBlendMode,
       logoOpacity: logoStyle.opacity,
       embossFilter: embossStyle.filter,
+      embossPathCount: button.querySelectorAll('.envelope-front__emboss path').length,
       embossMaskImage: embossStyle.maskImage === 'none'
         ? embossStyle.webkitMaskImage
         : embossStyle.maskImage,
@@ -134,12 +135,13 @@ test('presents the closed envelope front with a floating Open invitation', async
   expect(presentation.buttonBorderWidth).toBe('0px');
   expect(presentation.promptBackground).toBe('rgba(0, 0, 0, 0)');
   expect(presentation.promptBorderWidth).toBe('0px');
-  expect(presentation.cardFilter).toContain('grayscale(1)');
+  expect(presentation.cardFilter).toBe('none');
   expect(presentation.logoFilter).toBe('none');
   expect(presentation.logoMixBlendMode).toBe('normal');
   expect(presentation.logoOpacity).toBe('1');
   expect(presentation.embossFilter).toContain('drop-shadow');
-  expect(presentation.embossMaskImage).toContain('freentity-logo.png');
+  expect(presentation.embossPathCount).toBeGreaterThanOrEqual(5);
+  expect(presentation.embossMaskImage).toBe('none');
 
   const envelope = await page.locator('.envelope-shell').boundingBox();
   const prompt = await page.locator('.gate__prompt').boundingBox();
@@ -147,6 +149,57 @@ test('presents the closed envelope front with a floating Open invitation', async
   expect(envelope.y + envelope.height).toBeLessThan(prompt.y);
   expect(prompt.y + prompt.height).toBeLessThanOrEqual(832);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('preserves the official full-color logo on the extracted invitation card', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'card', { timeout: 3000 });
+
+  const cardFilter = await page.locator('.envelope__letter img')
+    .evaluate((image) => getComputedStyle(image).filter);
+
+  expect(cardFilter).toBe('none');
+});
+
+test('matches the approved compact envelope front with a right-side line emboss', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+
+  const shell = page.locator('.envelope-shell');
+  const brand = page.locator('.envelope-front__brand');
+  const emboss = page.locator('.envelope-front__emboss');
+  const shellBox = await shell.boundingBox();
+  const brandBox = await brand.boundingBox();
+  const embossBox = await emboss.boundingBox();
+  const embossPresentation = await emboss.evaluate((element) => {
+    const style = getComputedStyle(element);
+
+    return {
+      tagName: element.tagName.toLowerCase(),
+      pathCount: element.querySelectorAll('path').length,
+      maskImage: style.maskImage === 'none' ? style.webkitMaskImage : style.maskImage,
+      fill: style.fill,
+      stroke: style.stroke,
+    };
+  });
+
+  const shellRatio = shellBox.width / shellBox.height;
+  const brandCenterRatio = (brandBox.x + brandBox.width / 2 - shellBox.x) / shellBox.width;
+  const embossLeftRatio = (embossBox.x - shellBox.x) / shellBox.width;
+
+  expect(shellRatio).toBeGreaterThanOrEqual(1.38);
+  expect(shellRatio).toBeLessThanOrEqual(1.48);
+  expect(brandCenterRatio).toBeGreaterThanOrEqual(.4);
+  expect(brandCenterRatio).toBeLessThanOrEqual(.49);
+  expect(embossPresentation.tagName).toBe('svg');
+  expect(embossPresentation.pathCount).toBeGreaterThanOrEqual(5);
+  expect(embossPresentation.maskImage).toBe('none');
+  expect(embossPresentation.fill).toBe('none');
+  expect(embossPresentation.stroke).not.toBe('none');
+  expect(embossLeftRatio).toBeGreaterThan(.45);
 });
 
 test('keeps keyboard focus inside the sealed invitation gate', async ({ page }) => {

@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 
 const expectedFigmaAssetSha256 = 'a61257abec55ce2736aded16299a2110d51fd5cceb57b7f3e3f37c38a8a7e659';
 const expectedOfficialLogoSha256 = '2582061e74f0166c3dd4151f878271c7b0e5825add755646af06a30e41fb9a4d';
+const expectedEnvelopeCardSha256 = 'f3e6869dc3741caebc657c58bf42b141e71c4c8dd66cba9dc442b8b59d52a9f6';
 
 async function openInvitation(page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -21,6 +22,11 @@ test('ships the official full-color Freentity logo without changing its pixels',
   const asset = await readFile('assets/freentity-logo.png').catch(() => null);
   expect(asset, 'the official logo PNG must be present in the static site').not.toBeNull();
   expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedOfficialLogoSha256);
+});
+
+test('ships the approved full-color envelope card without changing its pixels', async () => {
+  const asset = await readFile('assets/envelope-card.jpg');
+  expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedEnvelopeCardSha256);
 });
 
 test('keeps the complete invitation transcript available to assistive technology', async ({ page }) => {

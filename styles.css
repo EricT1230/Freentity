@@ -147,7 +147,7 @@ html[data-state="opening"] .gate {
   position: relative;
   display: block;
   width: min(86vw, 560px);
-  aspect-ratio: 1.58;
+  aspect-ratio: 1.42;
   transform: rotateY(0deg);
   transform-style: preserve-3d;
   transition: transform 1000ms cubic-bezier(.45, .06, .2, 1);
@@ -167,18 +167,19 @@ html[data-state="opening"] .gate {
 .envelope-face--front {
   z-index: 2;
   overflow: hidden;
-  border: 1px solid rgb(235 241 237 / 16%);
-  border-radius: 5px;
+  isolation: isolate;
+  border: 1px solid rgb(230 237 232 / 15%);
+  border-radius: 3px;
   background:
-    radial-gradient(circle at 22% 8%, rgb(255 255 255 / 9%), transparent 34%),
-    repeating-linear-gradient(104deg, rgb(255 255 255 / 1.5%) 0 1px, transparent 1px 4px),
-    repeating-linear-gradient(17deg, rgb(0 0 0 / 1.6%) 0 1px, transparent 1px 5px),
-    linear-gradient(145deg, #21483a 0%, #15382d 52%, #0d281f 100%);
+    radial-gradient(circle at 23% 13%, rgb(255 255 255 / 7%), transparent 35%),
+    repeating-linear-gradient(101deg, rgb(255 255 255 / 1.7%) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(13deg, rgb(0 0 0 / 1.8%) 0 1px, transparent 1px 5px),
+    linear-gradient(145deg, #21483a 0%, #173b30 48%, #0c281f 100%);
   box-shadow:
-    0 31px 43px rgb(15 44 35 / 28%),
-    0 9px 15px rgb(9 29 23 / 14%),
-    inset 0 1px rgb(255 255 255 / 20%),
-    inset 0 -2px 2px rgb(0 0 0 / 25%);
+    0 28px 39px rgb(15 44 35 / 24%),
+    0 8px 14px rgb(9 29 23 / 13%),
+    inset 0 1px rgb(255 255 255 / 18%),
+    inset 0 -2px 2px rgb(0 0 0 / 22%);
   opacity: 1;
   transform: rotateY(0deg) translateZ(1px);
   transition: opacity 0ms linear 500ms;
@@ -189,8 +190,8 @@ html[data-state="opening"] .gate {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(circle at 28% 76%, rgb(255 255 255 / 3.5%) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 68% 32%, rgb(0 0 0 / 4%) 0 .8px, transparent 1.4px);
+    radial-gradient(circle at 28% 76%, rgb(255 255 255 / 3.5%) 0 .8px, transparent 1.4px),
+    radial-gradient(circle at 68% 32%, rgb(0 0 0 / 4.5%) 0 .7px, transparent 1.3px);
   background-size: 7px 9px, 9px 8px;
   content: "";
   opacity: .72;
@@ -200,13 +201,13 @@ html[data-state="opening"] .gate {
 .envelope-face--front::after {
   position: absolute;
   z-index: 4;
-  inset: 7px;
-  border: 1px solid rgb(224 232 227 / 9%);
-  border-radius: 2px;
+  inset: 0;
+  border: 1px solid rgb(224 232 227 / 8%);
+  border-radius: 3px;
   box-shadow:
-    inset 1px 1px rgb(255 255 255 / 8%),
-    inset -1px -1px rgb(0 0 0 / 13%),
-    inset 0 0 21px rgb(5 25 18 / 12%);
+    inset 1px 1px rgb(255 255 255 / 7%),
+    inset -1px -1px rgb(0 0 0 / 15%),
+    inset 0 0 24px rgb(5 25 18 / 11%);
   content: "";
   pointer-events: none;
 }
@@ -215,11 +216,11 @@ html[data-state="opening"] .gate {
   position: absolute;
   z-index: 3;
   top: 50%;
-  left: clamp(25px, 8.5%, 62px);
+  left: 42%;
   display: flex;
   align-items: center;
-  gap: clamp(13px, 3.2vw, 22px);
-  transform: translateY(-50%);
+  gap: clamp(10px, 2.6vw, 18px);
+  transform: translate(-50%, -50%);
 }
 
 .envelope-front__logo {
@@ -231,7 +232,7 @@ html[data-state="opening"] .gate {
 }
 
 .envelope-front__logo {
-  width: clamp(58px, 14vw, 88px);
+  width: clamp(46px, 10vw, 68px);
   aspect-ratio: 1;
   filter: none;
   mix-blend-mode: normal;
@@ -239,35 +240,36 @@ html[data-state="opening"] .gate {
 }
 
 .envelope-front__name {
-  color: #edf1ee;
+  color: #e7ece9;
   font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(1.35rem, 6.2vw, 2.4rem);
-  font-weight: 500;
-  letter-spacing: .025em;
+  font-size: clamp(1.25rem, 5.4vw, 2rem);
+  font-weight: 550;
+  letter-spacing: .018em;
   line-height: 1;
   text-shadow:
-    0 1px rgb(255 255 255 / 15%),
-    0 3px 11px rgb(0 0 0 / 28%);
+    0 1px rgb(255 255 255 / 13%),
+    0 3px 10px rgb(0 0 0 / 25%);
 }
 
 .envelope-front__emboss {
   position: absolute;
   z-index: 2;
-  top: -8%;
-  right: -10%;
+  top: 0;
+  right: 0;
   display: block;
-  width: 62%;
-  aspect-ratio: 1;
-  background: linear-gradient(145deg, #255243 0%, #14372c 52%, #092119 100%);
+  width: 48%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
   filter:
-    drop-shadow(-2px -2px 1px rgb(238 244 240 / 27%))
-    drop-shadow(3px 3px 2px rgb(0 0 0 / 62%))
-    drop-shadow(7px 8px 9px rgb(0 0 0 / 17%));
-  -webkit-mask: url("./assets/freentity-logo.png") center / contain no-repeat;
-  mask: url("./assets/freentity-logo.png") center / contain no-repeat;
-  opacity: .9;
-  transform: rotate(-2deg) scale(1.12);
-  transform-origin: 72% 48%;
+    drop-shadow(-1px -1px .5px rgb(238 244 240 / 20%))
+    drop-shadow(1.2px 1.4px .7px rgb(0 0 0 / 62%));
+  stroke: rgb(8 29 22 / 76%);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+  opacity: .88;
+  vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
 
@@ -309,7 +311,7 @@ html[data-state="opening"] .gate {
   background: #f8faf8;
   box-shadow: 0 7px 18px rgb(8 33 24 / 22%);
   clip-path: inset(0 0 60% 0);
-  transform: translateY(80%);
+  transform: translateY(92%);
   transform-origin: center bottom;
   transition:
     clip-path 1100ms cubic-bezier(.2, .72, .18, 1),
@@ -324,7 +326,7 @@ html[data-state="opening"] .gate {
   height: 100%;
   max-width: none;
   object-fit: cover;
-  filter: grayscale(1) contrast(.96) brightness(1.04);
+  filter: none;
   user-select: none;
   pointer-events: none;
 }
@@ -611,6 +613,16 @@ html[data-state="opening"] .invitation {
     box-shadow:
       0 30px 72px rgb(25 55 43 / 14%),
       0 3px 12px rgb(25 55 43 / 8%);
+  }
+}
+
+@media (min-width: 900px) and (max-height: 820px) {
+  .envelope-shell {
+    width: min(70vw, 640px);
+  }
+
+  html[data-state="opening"] .gate__open {
+    transform: translateY(clamp(132px, 21.2vh, 164px));
   }
 }
 
