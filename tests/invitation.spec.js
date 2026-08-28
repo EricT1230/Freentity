@@ -345,6 +345,12 @@ test('unwinds the tie before opening the flap and extracting the card', async ({
   expect(risenLetter.y).toBeLessThan(readyLetter.y - 30);
   expect(await letter.evaluate((element) => getComputedStyle(element).clipPath)).toMatch(/^inset\(0px\)/);
 
+  // A round line cap on a fully retracted dash still paints a dot, and every wrap
+  // starts at the upper button, so a spent wrap must be switched off rather than
+  // merely retracted.
+  expect(await page.evaluate(() => [...document.querySelectorAll('.tie__cord--wrap')]
+    .map((cord) => Number(getComputedStyle(cord).opacity)))).toEqual([0, 0, 0]);
+
   const transitions = await page.evaluate(() => window.__openingTransitions);
   const eventFor = (stage, type, phase) => transitions.find(
     (event) => event.stage === stage && event.type === type && event.phase === phase,

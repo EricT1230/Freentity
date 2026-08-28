@@ -398,18 +398,24 @@ html[data-state="sealed"] .envelope-front__sheen {
 
 /* pathLength normalises every cord to 100 units, so the dash maths is identical at
    any envelope size. Wound: fully drawn, retracting from the end of the path. */
+/* The opacity flip is not decoration: a round line cap on a fully retracted dash
+   still paints a dot, and every wrap starts at the upper button, so three of them
+   stacked into a visible speck once the cord was gone. Each wrap is switched off
+   the instant its own dash finishes. */
 .tie__cord--wrap {
   stroke-dasharray: 100;
   stroke-dashoffset: 0;
-  transition: stroke-dashoffset 420ms cubic-bezier(.4, .05, .3, 1);
+  transition:
+    stroke-dashoffset 420ms cubic-bezier(.4, .05, .3, 1),
+    opacity 1ms linear 420ms;
 }
 
 .tie__cord--wrap2 {
-  transition-delay: 210ms;
+  transition-delay: 210ms, 630ms;
 }
 
 .tie__cord--wrap1 {
-  transition-delay: 420ms;
+  transition-delay: 420ms, 840ms;
 }
 
 /* A short end already hangs while tied, which is what reads as string rather
@@ -438,6 +444,7 @@ html[data-opening-phase="flap-open"] .tie__cord--wrap,
 html[data-opening-phase="card"] .tie__cord--wrap,
 html[data-opening-phase="departing"] .tie__cord--wrap {
   stroke-dashoffset: -100;
+  opacity: 0;
 }
 
 html[data-opening-phase="unwind"] .tie__cord--tail,
@@ -539,15 +546,16 @@ html[data-opening-phase="departing"] .envelope-lift__shadow {
   }
 
   .tie__cord--wrap {
-    transition-duration: 160ms;
+    transition-duration: 160ms, 1ms;
+    transition-delay: 0ms, 160ms;
   }
 
   .tie__cord--wrap2 {
-    transition-delay: 80ms;
+    transition-delay: 80ms, 240ms;
   }
 
   .tie__cord--wrap1 {
-    transition-delay: 160ms;
+    transition-delay: 160ms, 320ms;
   }
 
   .tie__cord--tail {
