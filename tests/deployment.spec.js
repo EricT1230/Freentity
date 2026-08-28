@@ -31,11 +31,14 @@ test('builds a minimal GitHub Pages artifact containing only the exact design an
   expect(await listFiles('_site')).toEqual([
     '.nojekyll',
     'assets/envelope-card.jpg',
+    'assets/event.ics',
     'assets/figma-invitation.jpeg',
     'assets/freentity-logo.png',
     'assets/social-preview-20260828.jpg',
     'assets/social-preview.jpg',
+    'envelope.css',
     'index.html',
+    'reader.css',
     'script.js',
     'styles.css',
   ]);
@@ -44,14 +47,107 @@ test('builds a minimal GitHub Pages artifact containing only the exact design an
   expect(html).not.toContain('figma.com/api/mcp/asset');
   expect(html).not.toContain('CNAME');
   expect(html).not.toMatch(/assets\/invitation\.(?:png|webp)/);
-  expect(html).not.toContain('event.ics');
+});
+
+test('keeps every fetched resource first-party except the opt-in venue map link', async () => {
+  const html = await readFile('index.html', 'utf8');
+  const allowedPrefixes = [
+    'https://freentity.pages.dev/',
+    'https://freentity.com/',
+    'http://www.w3.org/2000/svg',
+    'https://www.google.com/maps/search/',
+  ];
+
+  for (const [url] of html.matchAll(/https?:\/\/[^"'\s)]+/g)) {
+    expect(allowedPrefixes.some((prefix) => url.startsWith(prefix)), url).toBe(true);
+  }
+
+  const sources = {
+    'styles.css': await readFile('styles.css', 'utf8'),
+    'envelope.css': await readFile('envelope.css', 'utf8'),
+    'reader.css': await readFile('reader.css', 'utf8'),
+    'script.js': await readFile('script.js', 'utf8'),
+  };
+  for (const [name, source] of Object.entries(sources)) {
+    expect(source, name).not.toMatch(/url\(\s*["']?https?:/);
+    expect(source, name).not.toMatch(/\b(?:fetch|XMLHttpRequest|WebSocket|importScripts)\s*\(/);
+    expect(source, name).not.toContain('@import');
+  }
+});
+
+test('references every local asset relatively so it serves from a root domain or a subpath', async () => {
+  const html = await readFile('index.html', 'utf8');
+  const references = [...html.matchAll(/(?:href|src)="([^"]+)"/g)].map(([, value]) => value);
+  const localReferences = references.filter((value) => !/^https?:/.test(value));
+
+  expect(localReferences.length).toBeGreaterThan(6);
+  for (const reference of localReferences) {
+    // A leading slash would break the GitHub Pages subpath; a bare name would break
+    // nothing today but keeps the published tree ambiguous. Require "./".
+    expect(reference.startsWith('./'), reference).toBe(true);
+  }
+});
+
+test('offers the event as a repository-local calendar download', async ({ page, request }) => {
+  await page.goto('./');
+
+  const calendar = page.locator('a[href="./assets/event.ics"]');
+  await expect(calendar).toHaveCount(1);
+  await expect(calendar).toHaveAttribute('download', 'freentity-2026-10-04.ics');
+
+  const response = await request.get('./assets/event.ics');
+  expect(response.ok()).toBe(true);
+  const calendarBody = await response.text();
+  expect(calendarBody).toContain('DTSTART;TZID=Asia/Taipei:20261004T140000');
+  expect(calendarBody).toContain('DTEND;TZID=Asia/Taipei:20261004T163000');
+  expect(calendarBody).toContain('SUMMARY:帆益科技新廠落成開幕暨技術發表');
+});
+
+test('opens every outbound link in a rel-protected new tab', async ({ page }) => {
+  await page.goto('./');
+
+  const outbound = page.locator('a[target="_blank"]');
+  await expect(outbound).toHaveCount(3);
+
+  const rels = await outbound.evaluateAll((links) => links.map((link) => link.getAttribute('rel')));
+  for (const rel of rels) {
+    expect(rel).toBe('noopener noreferrer');
+  }
+
+  // Both brand marks lead to the official site; the third is the venue map.
+  await expect(page.locator('a[href="https://freentity.com/"]')).toHaveCount(2);
+  await expect(page.locator('a[href*="google.com/maps/search/"]')).toHaveCount(1);
+});
+
+test('links both brand marks to the official Freentity site', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
+
+  for (const selector of ['.reader-bar__brand', '.rail__brand']) {
+    const brand = page.locator(selector);
+    await expect(brand, selector).toHaveAttribute('href', 'https://freentity.com/');
+    // The mark must reach the link with its own colours untouched.
+    const mark = brand.locator('img');
+    await expect(mark, selector).toHaveAttribute('src', './assets/freentity-logo.png');
+    expect(
+      await mark.evaluate((image) => {
+        const style = getComputedStyle(image);
+        return [style.filter, style.mixBlendMode, style.opacity];
+      }),
+      selector,
+    ).toEqual(['none', 'normal', '1']);
+  }
 });
 
 test('all runtime assets resolve below the repository path', async ({ request }) => {
   const runtimePaths = [
     './',
     './styles.css',
+    './envelope.css',
+    './reader.css',
     './script.js',
+    './assets/event.ics',
     './assets/envelope-card.jpg',
     './assets/freentity-logo.png',
     './assets/figma-invitation.jpeg',
@@ -66,7 +162,7 @@ test('all runtime assets resolve below the repository path', async ({ request })
 });
 
 test('publishes an absolute social preview for link unfurlers', async ({ page, request }) => {
-  const siteUrl = 'https://erict1230.github.io/Freentity/';
+  const siteUrl = 'https://freentity.pages.dev/';
   const previewUrl = `${siteUrl}assets/social-preview-20260828.jpg`;
 
   await page.goto('./');

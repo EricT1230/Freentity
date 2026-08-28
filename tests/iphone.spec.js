@@ -1,114 +1,18 @@
 import { mkdir } from 'node:fs/promises';
 import { devices, expect, test } from '@playwright/test';
 
+import {
+  inspectPocketCoverage,
+  observeOpeningTransitions,
+  waitForOpeningTransition,
+} from './opening-helpers.js';
+
 test.use({
   ...devices['iPhone 13'],
   browserName: 'webkit',
   colorScheme: 'light',
   locale: 'zh-TW',
 });
-
-async function observeOpeningTransitions(page) {
-  await page.evaluate(() => {
-    window.__openingTransitions = [];
-    window.__backPhaseSnapshot = null;
-    const activePhases = {};
-    const root = document.documentElement;
-    const stages = {
-      shell: document.querySelector('.envelope-shell'),
-      flap: document.querySelector('.envelope__flap'),
-      letter: document.querySelector('.envelope__letter'),
-    };
-
-    const phaseObserver = new MutationObserver(() => {
-      if (root.dataset.openingPhase !== 'back' || window.__backPhaseSnapshot) {
-        return;
-      }
-
-      const envelopeRect = stages.shell.getBoundingClientRect();
-      const samplePoints = [.12, .28, .44, .6, .76, .9].flatMap((yRatio) => (
-        [.12, .31, .5, .69, .88].map((xRatio) => [xRatio, yRatio])
-      ));
-      window.__backPhaseSnapshot = {
-        frontOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope-face--front')).opacity),
-        backOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope-face--back')).opacity),
-        exposedSamples: samplePoints.filter(([xRatio, yRatio]) => {
-          const topElement = document.elementFromPoint(
-            envelopeRect.left + envelopeRect.width * xRatio,
-            envelopeRect.top + envelopeRect.height * yRatio,
-          );
-          return topElement?.closest('.envelope__letter') === stages.letter;
-        }).length,
-        exposedBelowEnvelope: [.2, .5, .8].filter((xRatio) => {
-          const topElement = document.elementFromPoint(
-            envelopeRect.left + envelopeRect.width * xRatio,
-            envelopeRect.bottom + 2,
-          );
-          return topElement?.closest('.envelope__letter') === stages.letter;
-        }).length,
-      };
-      phaseObserver.disconnect();
-    });
-    phaseObserver.observe(root, { attributes: true, attributeFilter: ['data-opening-phase'] });
-
-    for (const [stage, element] of Object.entries(stages)) {
-      for (const type of ['transitionstart', 'transitionend']) {
-        element.addEventListener(type, (event) => {
-          if (event.propertyName === 'transform') {
-            if (type === 'transitionstart') {
-              activePhases[stage] = document.documentElement.dataset.openingPhase;
-            }
-            window.__openingTransitions.push({
-              stage,
-              type,
-              phase: activePhases[stage],
-              at: performance.now(),
-              elapsedTime: event.elapsedTime,
-            });
-          }
-        });
-      }
-    }
-  });
-}
-
-async function waitForOpeningTransition(page, stage, type, phase) {
-  await page.waitForFunction(
-    ([expectedStage, expectedType, expectedPhase]) => window.__openingTransitions?.some(
-      (event) => event.stage === expectedStage
-        && event.type === expectedType
-        && (!expectedPhase || event.phase === expectedPhase),
-    ),
-    [stage, type, phase],
-    { timeout: 8000 },
-  );
-}
-
-async function inspectPocketCoverage(letter) {
-  return letter.evaluate((element) => {
-    const envelopeRect = element.closest('.envelope-shell').getBoundingClientRect();
-    const coveredPoints = [.7, .8, .9].flatMap((yRatio) => (
-      [.2, .5, .8].map((xRatio) => [xRatio, yRatio])
-    ));
-
-    return {
-      exposedSamples: coveredPoints.filter(([xRatio, yRatio]) => {
-        const topElement = document.elementFromPoint(
-          envelopeRect.left + envelopeRect.width * xRatio,
-          envelopeRect.top + envelopeRect.height * yRatio,
-        );
-        return topElement?.closest('.envelope__letter') === element;
-      }).length,
-      exposedBelowEnvelope: [.2, .5, .8].filter((xRatio) => {
-        const topElement = document.elementFromPoint(
-          envelopeRect.left + envelopeRect.width * xRatio,
-          envelopeRect.bottom + 2,
-        );
-        return topElement?.closest('.envelope__letter') === element;
-      }).length,
-    };
-  });
-}
 
 test('opens and reads cleanly in an actual iPhone WebKit device profile', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -123,7 +27,9 @@ test('opens and reads cleanly in an actual iPhone WebKit device profile', async 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
   await page.getByRole('button', { name: 'Open' }).tap();
-  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
+  // WebKit shares the machine with the Chromium workers, so allow the same headroom
+  // the other specs use; the reduced-motion sequence itself runs in well under 2s.
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
   const firstPage = await page.locator('[data-page="1"]').boundingBox();
@@ -139,30 +45,35 @@ test('opens and reads cleanly in an actual iPhone WebKit device profile', async 
   expect((await page.locator('[data-page="1"]').boundingBox()).width).toBeCloseTo(402, 0);
 });
 
-test('plays the full front-to-back opening sequence on iPhone WebKit without overflow', async ({ page }) => {
+test('unties, lifts and extracts on iPhone WebKit without overflow', async ({ page }) => {
   await mkdir('test-results/visual', { recursive: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await observeOpeningTransitions(page);
 
   const shell = page.locator('.envelope-shell');
-  const flap = page.locator('.envelope-face--back .envelope__flap');
-  const letter = page.locator('.envelope-face--back .envelope__letter');
+  const flap = page.locator('.envelope__flap');
+  const letter = page.locator('.envelope__letter');
   const initialLetter = await letter.boundingBox();
 
   await expect(page.locator('.envelope-face--front')).toBeVisible();
-  expect(await shell.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m11)).toBeGreaterThan(.95);
+  await expect(page.locator('.tie__cord--wrap')).toHaveCount(3);
+  // Every wrap is fully drawn while the envelope is still tied shut.
+  expect(await page.evaluate(() => [...document.querySelectorAll('.tie__cord--wrap')]
+    .map((cord) => Number.parseFloat(getComputedStyle(cord).strokeDashoffset))))
+    .toEqual([0, 0, 0]);
 
   await page.getByRole('button', { name: 'Open' }).tap();
-  await waitForOpeningTransition(page, 'shell', 'transitionend', 'flip');
-  expect(await shell.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m11)).toBeLessThan(-.85);
-  await page.waitForFunction(() => window.__backPhaseSnapshot !== null);
-  const backPhase = await page.evaluate(() => window.__backPhaseSnapshot);
-  expect(backPhase.frontOpacity).toBeLessThan(.01);
-  expect(backPhase.backOpacity).toBeGreaterThan(.99);
-  expect(backPhase.exposedSamples).toBe(0);
-  expect(backPhase.exposedBelowEnvelope).toBe(0);
-  await page.screenshot({ path: 'test-results/visual/iphone-back.png' });
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'unwind');
+
+  await waitForOpeningTransition(page, 'cord', 'transitionend', 'unwind');
+  await page.waitForFunction(() => window.__untiedSnapshot !== null, null, { timeout: 6000 });
+  const untied = await page.evaluate(() => window.__untiedSnapshot);
+  expect(untied.stillWound).toBe(0);
+  expect(untied.tailOffset).toBeCloseTo(0, 0);
+  expect(untied.flapAngle).toBeGreaterThan(.99);
+  expect(untied.exposedBelowEnvelope).toBe(0);
+  await page.screenshot({ path: 'test-results/visual/iphone-untied.png' });
 
   const envelopeBox = await shell.boundingBox();
   await waitForOpeningTransition(page, 'flap', 'transitionend', 'flap');
@@ -187,12 +98,8 @@ test('plays the full front-to-back opening sequence on iPhone WebKit without ove
   const eventFor = (stage, type, phase) => transitions.find(
     (event) => event.stage === stage && event.type === type && event.phase === phase,
   );
-  const flipEnd = eventFor('shell', 'transitionend', 'flip');
-  const flapEnd = eventFor('flap', 'transitionend', 'flap');
-  const cardEnd = eventFor('letter', 'transitionend', 'card');
-  expect(flipEnd.elapsedTime).toBeGreaterThanOrEqual(.82);
-  expect(flapEnd.elapsedTime).toBeGreaterThanOrEqual(.72);
-  expect(cardEnd.elapsedTime).toBeGreaterThanOrEqual(.95);
+  expect(eventFor('flap', 'transitionend', 'flap').elapsedTime).toBeGreaterThanOrEqual(.72);
+  expect(eventFor('letter', 'transitionend', 'card').elapsedTime).toBeGreaterThanOrEqual(.95);
 
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
 });

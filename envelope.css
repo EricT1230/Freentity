@@ -1,0 +1,577 @@
+/* Freentity invitation — the string-tie envelope and its opening choreography.
+   Loads after styles.css, which owns the design tokens, --shell-width and the gate.
+
+   Palette is grey, white and deep green only. The Freentity mark is the single
+   fixed element: no filter, no blend mode, no opacity shift is ever applied to it.
+
+   Physical model, in order: the cord unwinds from its outermost wrap while the
+   loose end grows and swings under gravity; the freed flap folds back over the
+   top edge; the card slides out of the pocket. */
+
+.envelope-lift {
+  position: relative;
+  display: block;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 620ms var(--ease-expo);
+}
+
+.envelope-lift__shadow {
+  position: absolute;
+  z-index: -1;
+  bottom: -6%;
+  left: 5%;
+  display: block;
+  width: 90%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgb(1 8 5 / 66%) 0%, rgb(1 8 5 / 28%) 40%, transparent 74%);
+  opacity: .9;
+  transform: translateZ(-90px) scale(1);
+  transition: opacity 700ms ease, transform 700ms var(--ease-settle);
+  pointer-events: none;
+}
+
+.envelope-shell {
+  position: relative;
+  display: block;
+  width: var(--shell-width);
+  aspect-ratio: 1.42;
+  transform-style: preserve-3d;
+}
+
+.envelope-face {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 5px;
+}
+
+/* --------------------------------------------------------------- paper stock */
+
+/* No overflow clipping here: the flap folds back over the top edge and the card
+   rises clear of the envelope, so both travel outside this rect. The paper's own
+   texture and gloss are clipped by their own rounded boxes instead. */
+.envelope-face--front {
+  z-index: 2;
+  isolation: isolate;
+  border: 1px solid rgb(23 60 47 / 10%);
+  border-radius: 5px;
+  perspective: 900px;
+  perspective-origin: 50% 22%;
+  background:
+    radial-gradient(circle at 26% 14%, rgb(255 255 255 / 96%), transparent 52%),
+    linear-gradient(146deg, #fdfefd 0%, #f3f6f4 46%, #e6ebe8 100%);
+  box-shadow:
+    0 44px 74px rgb(1 9 6 / 58%),
+    0 14px 26px rgb(1 9 6 / 40%),
+    inset 0 1px rgb(255 255 255 / 94%);
+}
+
+/* Laid paper: fine fibre lines plus grain, never a flat fill. */
+.envelope-face--front::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgb(23 60 47 / 3.4%) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgb(23 60 47 / 2.2%) 0 1px, transparent 1px 7px),
+    var(--grain);
+  background-size: auto, auto, 180px 180px;
+  border-radius: 5px;
+  content: "";
+  opacity: .5;
+  pointer-events: none;
+}
+
+.envelope-face--front::after {
+  position: absolute;
+  z-index: 9;
+  inset: 0;
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 0 1px rgb(23 60 47 / 5%),
+    inset 0 0 40px rgb(23 60 47 / 6%);
+  content: "";
+  pointer-events: none;
+}
+
+/* Clips the light sweep to the paper without clipping the moving parts. */
+.envelope__gloss {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+.envelope-front__sheen {
+  position: absolute;
+  inset: -30% -60%;
+  display: block;
+  background: linear-gradient(
+    104deg,
+    transparent 36%,
+    rgb(23 60 47 / 4%) 45%,
+    rgb(255 255 255 / 92%) 50%,
+    rgb(23 60 47 / 3%) 56%,
+    transparent 64%
+  );
+  opacity: 0;
+  transform: translateX(-42%);
+  pointer-events: none;
+}
+
+html[data-state="sealed"] .envelope-front__sheen {
+  animation: sheen-drift 7.5s ease-in-out 1.4s infinite;
+}
+
+/* -------------------------------------------------------------- pocket + card */
+
+/* The inside back wall, seen through the mouth once the card has left. */
+.envelope__interior {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: block;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #dfe6e2 0%, #eaeeec 34%, #f1f4f2 100%);
+}
+
+.envelope__letter {
+  position: absolute;
+  z-index: 2;
+  top: 9%;
+  left: 9%;
+  display: block;
+  width: 82%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgb(23 60 47 / 16%);
+  border-radius: 2px;
+  background: var(--paper);
+  box-shadow: 0 8px 18px rgb(16 46 36 / 24%);
+  clip-path: inset(0 0 60% 0);
+  transform: translateY(92%);
+  transform-origin: center bottom;
+  transition:
+    clip-path 800ms var(--ease-settle),
+    transform 800ms var(--ease-settle),
+    box-shadow 800ms ease;
+  will-change: clip-path, transform;
+}
+
+.envelope__letter img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  filter: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.envelope__inner-shadow {
+  position: absolute;
+  z-index: 3;
+  top: 30%;
+  left: 8%;
+  display: block;
+  width: 84%;
+  height: 24%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 100%, rgb(16 46 36 / 40%), transparent 68%);
+  filter: blur(5px);
+  opacity: 0;
+  transform: translateY(24%) scaleY(.55);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 460ms ease,
+    transform 720ms var(--ease-settle);
+  pointer-events: none;
+}
+
+/* Front panel of the body. Its top edge at 42% is the mouth of the envelope. */
+.envelope__pocket {
+  position: absolute;
+  z-index: 4;
+  inset: 42% 0 0;
+  display: block;
+  overflow: hidden;
+  border-radius: 0 0 5px 5px;
+  background:
+    repeating-linear-gradient(0deg, rgb(23 60 47 / 3%) 0 1px, transparent 1px 4px),
+    linear-gradient(168deg, #f8faf9 0%, #f0f4f2 52%, #e3e9e5 100%);
+  box-shadow:
+    0 -1px 0 rgb(255 255 255 / 92%),
+    0 -5px 10px rgb(16 46 36 / 20%);
+}
+
+/* Blind deboss on the lower right: light edge above, dark edge below, no ink. */
+.envelope-front__emboss {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: -18%;
+  display: block;
+  width: 44%;
+  height: 150%;
+  overflow: visible;
+  fill: none;
+  filter:
+    drop-shadow(1px 1.2px .4px rgb(255 255 255 / 94%))
+    drop-shadow(-.8px -1px .6px rgb(23 60 47 / 26%));
+  stroke: rgb(23 60 47 / 17%);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+  opacity: .95;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------- flap */
+
+.envelope__flap {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 42%;
+  transform: rotateX(0deg);
+  transform-origin: 50% 0;
+  transform-style: preserve-3d;
+  transition:
+    transform 900ms var(--ease-swing),
+    z-index 0ms linear 450ms;
+  will-change: transform;
+}
+
+.envelope__flap-face {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 5px 5px 3px 3px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Printed side, facing the reader while the envelope is tied shut. */
+.envelope__flap-face--inner {
+  background:
+    repeating-linear-gradient(0deg, rgb(23 60 47 / 3%) 0 1px, transparent 1px 4px),
+    linear-gradient(160deg, #fdfefd 0%, #f4f7f5 68%, #e9eeeb 100%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 94%),
+    0 5px 12px rgb(16 46 36 / 24%);
+}
+
+/* Lining, revealed when the flap folds back. */
+.envelope__flap-face--outer {
+  background:
+    repeating-linear-gradient(56deg, rgb(23 60 47 / 6%) 0 1px, transparent 1px 8px),
+    linear-gradient(200deg, #e8eeea 0%, #dbe3de 58%, #cbd6d0 100%);
+  box-shadow: inset 0 -1px 3px rgb(16 46 36 / 22%);
+  transform: rotateX(180deg);
+}
+
+.envelope-front__brand {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: clamp(9px, calc(var(--shell-width) * .028), 18px);
+  transform: translate(-50%, -50%);
+}
+
+.envelope-front__logo {
+  display: block;
+  width: clamp(34px, calc(var(--shell-width) * .105), 60px);
+  aspect-ratio: 1;
+  height: auto;
+  max-width: none;
+  filter: none;
+  mix-blend-mode: normal;
+  opacity: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
+.envelope-front__name {
+  color: var(--green-600);
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.1rem, calc(var(--shell-width) * .069), 2.35rem);
+  font-weight: 550;
+  letter-spacing: .018em;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 84%);
+}
+
+/* -------------------------------------------------------------- tie hardware */
+
+/* Two eyelet discs, punched from the same stock as the envelope. One rides on
+   the flap, one is fixed to the body. Sized from the envelope itself: a plain
+   percentage would resolve against the flap for one and the face for the other,
+   which is how they ended up different sizes. */
+.envelope__disc {
+  position: absolute;
+  left: 50%;
+  display: block;
+  width: calc(var(--shell-width) / 1.42 * .12);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgb(255 255 255 / 96%) 0 34%, transparent 62%),
+    linear-gradient(160deg, #fbfdfc 0%, #f2f5f3 58%, #e6ebe8 100%);
+  box-shadow:
+    0 2px 5px rgb(16 46 36 / 26%),
+    0 1px 0 rgb(255 255 255 / 88%),
+    inset 0 0 0 1px rgb(23 60 47 / 10%);
+  transform: translate(-50%, -50%);
+}
+
+/* Metal eyelet ring set into the paper. */
+.envelope__disc::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #c2ccc7 0 26%, #7f8c86 60%, #4c5a54 100%);
+  box-shadow:
+    0 1px 1px rgb(16 46 36 / 34%),
+    inset 0 -1px 1px rgb(255 255 255 / 28%);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+/* The hole the cord is knotted through. */
+.envelope__disc::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 17%;
+  height: 17%;
+  border-radius: 50%;
+  background: #232f2a;
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 62%);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.envelope__disc--flap {
+  z-index: 8;
+  top: 32%;
+  transition: opacity 220ms ease;
+}
+
+.envelope__disc--body {
+  z-index: 8;
+  top: 60%;
+}
+
+/* -------------------------------------------------------------------- cord */
+
+.envelope__tie {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 1.5px 1.5px rgb(16 46 36 / 34%));
+  pointer-events: none;
+}
+
+.tie__cord {
+  fill: none;
+  stroke: #2c5545;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: .6;
+}
+
+/* pathLength normalises every cord to 100 units, so the dash maths is identical at
+   any envelope size. Wound: fully drawn, retracting from the end of the path. */
+.tie__cord--wrap {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 420ms cubic-bezier(.4, .05, .3, 1);
+}
+
+.tie__cord--wrap2 {
+  transition-delay: 210ms;
+}
+
+.tie__cord--wrap1 {
+  transition-delay: 420ms;
+}
+
+/* A short end already hangs while tied, which is what reads as string rather
+   than a printed emblem. The first fifth of this path is covered by the disc it
+   is knotted behind, so the rest offset leaves a visible stub below the rim.
+   Unwinding lengthens it, then gravity swings it straight. */
+.tie__cord--tail {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 55;
+  transform-box: view-box;
+  transform-origin: 71px 60px;
+  rotate: -16deg;
+  transition:
+    stroke-dashoffset 840ms cubic-bezier(.28, .1, .3, 1),
+    rotate 1180ms cubic-bezier(.2, 1.5, .4, 1);
+}
+
+/* ------------------------------------------------------------- opening flow */
+
+/* Unwinding: the dash retracts from the END of the path, and the outermost wrap
+   is authored last, so the winding comes undone in the order a hand would do it.
+   The tail grows by the same 100 units the winding loses: cord length conserved. */
+html[data-opening-phase="unwind"] .tie__cord--wrap,
+html[data-opening-phase="flap"] .tie__cord--wrap,
+html[data-opening-phase="flap-open"] .tie__cord--wrap,
+html[data-opening-phase="card"] .tie__cord--wrap,
+html[data-opening-phase="departing"] .tie__cord--wrap {
+  stroke-dashoffset: -100;
+}
+
+html[data-opening-phase="unwind"] .tie__cord--tail,
+html[data-opening-phase="flap"] .tie__cord--tail,
+html[data-opening-phase="flap-open"] .tie__cord--tail,
+html[data-opening-phase="card"] .tie__cord--tail,
+html[data-opening-phase="departing"] .tie__cord--tail {
+  stroke-dashoffset: 0;
+  rotate: 0deg;
+}
+
+/* The flap disc travels with the flap once the cord no longer holds it. */
+html[data-opening-phase="flap"] .envelope__flap,
+html[data-opening-phase="flap-open"] .envelope__flap,
+html[data-opening-phase="card"] .envelope__flap,
+html[data-opening-phase="departing"] .envelope__flap {
+  z-index: 1;
+  transform: rotateX(-152deg);
+}
+
+html[data-opening-phase="flap"] .envelope__disc--flap,
+html[data-opening-phase="flap-open"] .envelope__disc--flap,
+html[data-opening-phase="card"] .envelope__disc--flap,
+html[data-opening-phase="departing"] .envelope__disc--flap {
+  opacity: 0;
+}
+
+html[data-opening-phase="flap"] .envelope__letter,
+html[data-opening-phase="flap-open"] .envelope__letter {
+  box-shadow: 0 14px 26px rgb(16 46 36 / 30%);
+  clip-path: inset(0 0 32% 0);
+  transform: translateY(33%) scale(.995);
+}
+
+html[data-opening-phase="flap"] .envelope__inner-shadow {
+  opacity: .5;
+  transform: translateY(0) scaleY(1);
+}
+
+html[data-opening-phase="flap-open"] .envelope__inner-shadow {
+  opacity: .26;
+  transform: translateY(10%) scaleY(.7);
+}
+
+html[data-opening-phase="card"] .envelope__letter,
+html[data-opening-phase="departing"] .envelope__letter {
+  box-shadow: 0 28px 46px rgb(16 46 36 / 32%);
+  clip-path: inset(0);
+  transform: translateY(-72%) scale(1.03);
+  transition-duration: 1060ms, 1060ms, 1060ms;
+  transition-timing-function: var(--ease-expo), var(--ease-expo), ease;
+}
+
+html[data-opening-phase="card"] .envelope__inner-shadow,
+html[data-opening-phase="departing"] .envelope__inner-shadow {
+  opacity: .1;
+  transform: translateY(22%) scaleY(.4);
+}
+
+html[data-state="opening"] .envelope-lift__shadow {
+  opacity: .55;
+  transform: translateZ(-90px) scale(1.1);
+}
+
+html[data-opening-phase="card"] .envelope-lift__shadow,
+html[data-opening-phase="departing"] .envelope-lift__shadow {
+  opacity: .3;
+  transform: translateZ(-90px) scale(.94);
+}
+
+.gate__open:hover .envelope-lift__shadow {
+  opacity: 1;
+  transform: translateZ(-90px) scale(1.04);
+}
+
+/* --------------------------------------------------------------- keyframes */
+
+@keyframes sheen-drift {
+  0%, 62% {
+    opacity: 0;
+    transform: translateX(-42%);
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  92%, 100% {
+    opacity: 0;
+    transform: translateX(42%);
+  }
+}
+
+/* ------------------------------------------------------------------- motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .envelope-lift {
+    transition-duration: 1ms;
+  }
+
+  .tie__cord--wrap {
+    transition-duration: 160ms;
+  }
+
+  .tie__cord--wrap2 {
+    transition-delay: 80ms;
+  }
+
+  .tie__cord--wrap1 {
+    transition-delay: 160ms;
+  }
+
+  .tie__cord--tail {
+    transition-duration: 420ms, 420ms;
+  }
+
+  .envelope__flap {
+    transition-duration: 340ms, 0ms;
+  }
+
+  .envelope__letter {
+    transition-duration: 480ms, 480ms, 480ms;
+  }
+
+  html[data-opening-phase="card"] .envelope__letter,
+  html[data-opening-phase="departing"] .envelope__letter {
+    transition-duration: 480ms, 480ms, 480ms;
+  }
+
+  .envelope__inner-shadow {
+    transition-duration: 160ms, 220ms;
+  }
+
+  .envelope-front__sheen {
+    animation: none !important;
+  }
+}

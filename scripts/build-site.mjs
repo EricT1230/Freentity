@@ -5,7 +5,10 @@ const outputRoot = '_site';
 const runtimeFiles = [
   'index.html',
   'styles.css',
+  'envelope.css',
+  'reader.css',
   'script.js',
+  'assets/event.ics',
   'assets/envelope-card.jpg',
   'assets/freentity-logo.png',
   'assets/figma-invitation.jpeg',

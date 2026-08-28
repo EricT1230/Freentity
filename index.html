@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f2f4f2">
     <meta name="description" content="帆益科技新廠落成開幕暨技術發表邀請函">
-    <link rel="canonical" href="https://erict1230.github.io/Freentity/">
+    <link rel="canonical" href="https://freentity.pages.dev/">
     <meta property="og:locale" content="zh_TW">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="帆益科技 Freentity">
     <meta property="og:title" content="帆益科技｜新廠落成開幕暨技術發表">
     <meta property="og:description" content="誠摯邀請您參與帆益科技新廠落成開幕暨技術發表。">
-    <meta property="og:url" content="https://erict1230.github.io/Freentity/">
-    <meta property="og:image" content="https://erict1230.github.io/Freentity/assets/social-preview-20260828.jpg">
-    <meta property="og:image:secure_url" content="https://erict1230.github.io/Freentity/assets/social-preview-20260828.jpg">
+    <meta property="og:url" content="https://freentity.pages.dev/">
+    <meta property="og:image" content="https://freentity.pages.dev/assets/social-preview-20260828.jpg">
+    <meta property="og:image:secure_url" content="https://freentity.pages.dev/assets/social-preview-20260828.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1920">
     <meta property="og:image:height" content="1080">
@@ -21,21 +21,29 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="帆益科技｜新廠落成開幕暨技術發表">
     <meta name="twitter:description" content="誠摯邀請您參與帆益科技新廠落成開幕暨技術發表。">
-    <meta name="twitter:image" content="https://erict1230.github.io/Freentity/assets/social-preview-20260828.jpg">
+    <meta name="twitter:image" content="https://freentity.pages.dev/assets/social-preview-20260828.jpg">
     <meta name="twitter:image:alt" content="帆益科技新廠落成開幕暨技術發表邀請函封面">
     <title>帆益科技｜新廠落成開幕暨技術發表</title>
+    <link rel="icon" href="./assets/freentity-logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/freentity-logo.png">
     <link rel="preload" as="image" href="./assets/freentity-logo.png">
     <link rel="preload" as="image" href="./assets/envelope-card.jpg">
     <link rel="preload" as="image" href="./assets/figma-invitation.jpeg" fetchpriority="high">
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./envelope.css">
+    <link rel="stylesheet" href="./reader.css">
     <script>
       (() => {
         const root = document.documentElement;
+        const themeColor = document.querySelector('meta[name="theme-color"]');
         root.dataset.state = 'sealed';
+        themeColor?.setAttribute('content', '#06170f');
+
         window.__invitationFailOpenTimer = window.setTimeout(() => {
           if (root.dataset.invitationReady === 'true') return;
 
           root.dataset.state = 'open';
+          themeColor?.setAttribute('content', '#f2f4f2');
           const gate = document.querySelector('#invitation-gate');
           const invitation = document.querySelector('#invitation');
           gate?.setAttribute('aria-hidden', 'true');
@@ -50,47 +58,101 @@
         #invitation-gate { display: none !important; }
         #invitation { display: block !important; }
         .design-page { opacity: 1 !important; transform: none !important; }
+        .reader-rail { opacity: 1 !important; transform: none !important; }
       </style>
     </noscript>
   </head>
   <body>
     <section id="invitation-gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
       <h1 id="gate-title" class="sr-only">您收到一封帆益科技邀請函</h1>
+      <div class="gate__grid" aria-hidden="true"></div>
       <div class="gate__glow" aria-hidden="true"></div>
+      <div class="gate__grain" aria-hidden="true"></div>
+      <div class="gate__bloom" aria-hidden="true"></div>
 
       <div class="gate__stage">
         <button id="open-invitation" class="gate__open" type="button" aria-label="Open">
-          <span class="envelope-shell" aria-hidden="true">
-            <span class="envelope-face envelope-face--front">
-              <span class="envelope-front__brand">
-                <img class="envelope-front__logo" src="./assets/freentity-logo.png" width="292" height="292" alt="">
-                <span class="envelope-front__name">Freentity</span>
-              </span>
-              <svg class="envelope-front__emboss" viewBox="0 0 280 240" aria-hidden="true" focusable="false">
-                <path d="M 302 -18 L 40 70 Q 20 77 20 101 V 156 Q 20 180 40 188 L 302 282"></path>
-                <path d="M 302 14 L 73 88 Q 53 95 53 118 V 155 Q 53 176 73 183 L 302 264"></path>
-                <path d="M 302 46 L 106 107 Q 86 113 86 135 V 155 Q 86 173 106 180 L 302 248"></path>
-                <path d="M 302 79 L 139 126 Q 119 132 119 152 V 157 Q 119 173 139 180 L 302 234"></path>
-                <path d="M 302 111 L 172 144 Q 152 149 152 168 V 172 Q 152 185 172 190 L 302 232"></path>
-                <path d="M 302 143 L 204 163 Q 185 167 185 183 V 187 Q 185 198 204 202 L 302 230"></path>
-              </svg>
-            </span>
+          <span class="envelope-lift" aria-hidden="true">
+            <span class="envelope-shell">
+              <span class="envelope-face envelope-face--front">
+                <span class="envelope__interior"></span>
 
-            <span class="envelope-face envelope-face--back">
-              <span class="envelope__back-panel"></span>
-              <span class="envelope__letter">
-                <img src="./assets/envelope-card.jpg" width="1280" height="720" alt="" fetchpriority="high">
+                <span class="envelope__letter">
+                  <img src="./assets/envelope-card.jpg" width="1280" height="720" alt="" fetchpriority="high">
+                </span>
+
+                <span class="envelope__inner-shadow"></span>
+
+                <span class="envelope__pocket">
+                  <svg class="envelope-front__emboss" viewBox="0 0 280 240" aria-hidden="true" focusable="false">
+                    <path d="M 302 -18 L 40 70 Q 20 77 20 101 V 156 Q 20 180 40 188 L 302 282"></path>
+                    <path d="M 302 14 L 73 88 Q 53 95 53 118 V 155 Q 53 176 73 183 L 302 264"></path>
+                    <path d="M 302 46 L 106 107 Q 86 113 86 135 V 155 Q 86 173 106 180 L 302 248"></path>
+                    <path d="M 302 79 L 139 126 Q 119 132 119 152 V 157 Q 119 173 139 180 L 302 234"></path>
+                    <path d="M 302 111 L 172 144 Q 152 149 152 168 V 172 Q 152 185 172 190 L 302 232"></path>
+                    <path d="M 302 143 L 204 163 Q 185 167 185 183 V 187 Q 185 198 204 202 L 302 230"></path>
+                  </svg>
+                </span>
+
+                <span class="envelope__flap">
+                  <span class="envelope__flap-face envelope__flap-face--inner">
+                    <span class="envelope-front__brand">
+                      <img class="envelope-front__logo" src="./assets/freentity-logo.png" width="292" height="292" alt="">
+                      <span class="envelope-front__name">Freentity</span>
+                    </span>
+                  </span>
+                  <span class="envelope__flap-face envelope__flap-face--outer"></span>
+                </span>
+
+                <!-- Both discs sit above the cord so every turn that passes beneath
+                     them stays hidden. The flap disc fades as the flap lifts, which is
+                     what travelling with the fold looks like from the front. -->
+                <span class="envelope__disc envelope__disc--flap"></span>
+                <span class="envelope__disc envelope__disc--body"></span>
+
+                <!-- Winding and loose end share one cord: as the figure-of-eight
+                     retracts from its outermost wrap, the tail grows and swings. -->
+                <svg class="envelope__tie" viewBox="0 0 142 100" aria-hidden="true" focusable="false">
+
+                  <!-- One path per wrap: an SVG dash pattern restarts at every
+                       subpath, so wrap-by-wrap retraction needs separate cords.
+                       The rivet stands each paper disc off the envelope, so every
+                       turn passes UNDER the disc and is hidden by it. Only the runs
+                       crossing the gap show. Outermost comes undone first. Outermost comes undone first. -->
+                  <path
+                    class="tie__cord tie__cord--wrap tie__cord--wrap3"
+                    pathLength="100"
+                    d="M 66.42 31.79 A 5.2 5.2 0 1 1 76.81 32.24 L 65.19 59.76 A 5.2 5.2 0 1 0 75.58 60.21 Z"
+                  ></path>
+                  <path
+                    class="tie__cord tie__cord--wrap tie__cord--wrap2"
+                    pathLength="100"
+                    d="M 66.92 31.96 A 4.2 4.2 0 1 1 75.32 32.04 L 66.68 59.96 A 4.2 4.2 0 1 0 75.08 60.04 Z"
+                  ></path>
+                  <path
+                    class="tie__cord tie__cord--wrap tie__cord--wrap1"
+                    pathLength="100"
+                    d="M 67.31 32.12 A 3.2 3.2 0 1 1 73.71 31.9 L 68.29 60.1 A 3.2 3.2 0 1 0 74.69 59.88 Z"
+                  ></path>
+                  <path
+                    class="tie__cord tie__cord--tail"
+                    pathLength="100"
+                    d="M 71 60 C 70.6 66 66.3 70 67 77 C 67.4 83 70.5 85 70 91"
+                  ></path>
+                </svg>
+
+                <span class="envelope__gloss">
+                  <span class="envelope-front__sheen"></span>
+                </span>
               </span>
-              <span class="envelope__inner-shadow"></span>
-              <span class="envelope__flap"></span>
-              <span class="envelope__pocket"></span>
-              <span class="envelope__seal">F</span>
             </span>
+            <span class="envelope-lift__shadow"></span>
           </span>
 
           <span class="gate__prompt" aria-hidden="true">
             <strong>Open</strong>
           </span>
+          <span class="gate__hint" aria-hidden="true">輕觸信封，解開繫繩</span>
         </button>
       </div>
     </section>
@@ -98,59 +160,143 @@
     <main id="invitation" class="invitation" tabindex="-1" aria-labelledby="invitation-title">
       <h1 id="invitation-title" class="sr-only">帆益科技新廠落成開幕暨技術發表邀請函</h1>
 
-      <div id="invitation-reader" class="reader">
-        <section
-          class="design-page"
-          data-page="1"
-          data-slice-start="0"
-          data-slice-end="339"
-          aria-label="邀請函第 1 頁，共 4 頁"
-          style="--page-ratio: 402 / 339; --image-height: 414.1593%; --image-top: 0%;"
-        >
-          <div class="design-page__crop">
-            <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" draggable="false">
-          </div>
-        </section>
-
-        <section
-          class="design-page"
-          data-page="2"
-          data-slice-start="339"
-          data-slice-end="724"
-          aria-label="邀請函第 2 頁，共 4 頁"
-          style="--page-ratio: 402 / 385; --image-height: 364.6753%; --image-top: -88.0519%;"
-        >
-          <div class="design-page__crop">
-            <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
-          </div>
-        </section>
-
-        <section
-          class="design-page"
-          data-page="3"
-          data-slice-start="724"
-          data-slice-end="1000"
-          aria-label="邀請函第 3 頁，共 4 頁"
-          style="--page-ratio: 402 / 276; --image-height: 508.6957%; --image-top: -262.3188%;"
-        >
-          <div class="design-page__crop">
-            <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
-          </div>
-        </section>
-
-        <section
-          class="design-page"
-          data-page="4"
-          data-slice-start="1000"
-          data-slice-end="1404"
-          aria-label="邀請函第 4 頁，共 4 頁"
-          style="--page-ratio: 402 / 404; --image-height: 347.5248%; --image-top: -247.5248%;"
-        >
-          <div class="design-page__crop">
-            <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
-          </div>
-        </section>
+      <div class="reader-progress" aria-hidden="true">
+        <span class="reader-progress__bar"></span>
       </div>
+
+      <header class="reader-bar">
+        <a
+          class="reader-bar__brand"
+          href="https://freentity.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img src="./assets/freentity-logo.png" width="292" height="292" alt="帆益科技 Freentity 官方網站">
+          <span>帆益科技</span>
+        </a>
+        <p class="reader-bar__section" data-section-label>邀請</p>
+      </header>
+
+      <div class="reader-stage">
+        <aside class="reader-rail" aria-label="邀請函導覽">
+          <a
+            class="rail__brand"
+            href="https://freentity.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="帆益科技 Freentity 官方網站"
+          >
+            <img src="./assets/freentity-logo.png" width="292" height="292" alt="">
+            <span class="rail__brand-text">
+              帆益科技
+              <em>FREENTITY</em>
+            </span>
+          </a>
+
+          <dl class="rail__facts">
+            <div>
+              <dt>TIME</dt>
+              <dd>2026 / 10 / 04(日)<br>14:00 起，自由入場</dd>
+            </div>
+            <div>
+              <dt>VENUE</dt>
+              <dd>320 桃園市中壢區<br>中園路 192 號 5 樓之 1、2</dd>
+            </div>
+          </dl>
+
+          <nav class="rail__nav" aria-label="頁面導覽">
+            <button type="button" data-goto="1"><i>01</i><span>邀請</span></button>
+            <button type="button" data-goto="2"><i>02</i><span>WHAT'S NEW</span></button>
+            <button type="button" data-goto="3"><i>03</i><span>RUNDOWN</span></button>
+            <button type="button" data-goto="4"><i>04</i><span>VENUE</span></button>
+          </nav>
+
+          <div class="rail__tools">
+            <a class="tool" href="./assets/event.ics" download="freentity-2026-10-04.ics">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="3.2" y="5" width="17.6" height="16" rx="2.4"></rect>
+                <path d="M3.2 9.6h17.6M8 3v4M16 3v4M9.4 14.7l1.9 1.9 3.5-3.7"></path>
+              </svg>
+              <span>加入行事曆</span>
+            </a>
+            <a
+              class="tool"
+              href="https://www.google.com/maps/search/?api=1&amp;query=320%E6%A1%83%E5%9C%92%E5%B8%82%E4%B8%AD%E5%A3%A2%E5%8D%80%E4%B8%AD%E5%9C%92%E8%B7%AF192%E8%99%9F"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 21.2c3.9-4.3 5.9-7.6 5.9-10a5.9 5.9 0 1 0-11.8 0c0 2.4 2 5.7 5.9 10Z"></path>
+                <circle cx="12" cy="11" r="2.4"></circle>
+              </svg>
+              <span>開啟地圖</span>
+            </a>
+            <button class="tool" id="share-invitation" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 15.6V3.8M12 3.8 7.9 8M12 3.8 16.1 8"></path>
+                <path d="M5 13.4v5.3a1.9 1.9 0 0 0 1.9 1.9h10.2a1.9 1.9 0 0 0 1.9-1.9v-5.3"></path>
+              </svg>
+              <span>分享邀請函</span>
+            </button>
+          </div>
+        </aside>
+
+        <div id="invitation-reader" class="reader">
+          <section
+            class="design-page"
+            data-page="1"
+            data-slice-start="0"
+            data-slice-end="339"
+            aria-label="邀請函第 1 頁，共 4 頁"
+            style="--page-ratio: 402 / 339; --image-height: 414.1593%; --image-top: 0%;"
+          >
+            <div class="design-page__crop">
+              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" draggable="false">
+            </div>
+          </section>
+
+          <section
+            class="design-page"
+            data-page="2"
+            data-slice-start="339"
+            data-slice-end="724"
+            aria-label="邀請函第 2 頁，共 4 頁"
+            style="--page-ratio: 402 / 385; --image-height: 364.6753%; --image-top: -88.0519%;"
+          >
+            <div class="design-page__crop">
+              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
+            </div>
+          </section>
+
+          <section
+            class="design-page"
+            data-page="3"
+            data-slice-start="724"
+            data-slice-end="1000"
+            aria-label="邀請函第 3 頁，共 4 頁"
+            style="--page-ratio: 402 / 276; --image-height: 508.6957%; --image-top: -262.3188%;"
+          >
+            <div class="design-page__crop">
+              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
+            </div>
+          </section>
+
+          <section
+            class="design-page"
+            data-page="4"
+            data-slice-start="1000"
+            data-slice-end="1404"
+            aria-label="邀請函第 4 頁，共 4 頁"
+            style="--page-ratio: 402 / 404; --image-height: 347.5248%; --image-top: -247.5248%;"
+          >
+            <div class="design-page__crop">
+              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <p id="reader-toast" class="reader-toast" role="status" aria-live="polite"></p>
 
       <article id="invitation-transcript" class="sr-only">
         <h2>帆益科技 FREENTITY</h2>

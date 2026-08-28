@@ -14,6 +14,21 @@ const viewports = [
 
 const sliceHeights = [339, 385, 276, 404];
 
+// The artwork is a 402 x 1404 phone design rasterised at 1174px wide. Phones show it
+// edge to edge; wider screens hold it near its natural card size so the source stays
+// above 1x density instead of being upscaled across the whole viewport.
+function expectedReaderWidth(clientWidth) {
+  if (clientWidth >= 1200) {
+    return Math.min(clientWidth - 96, 588);
+  }
+
+  if (clientWidth >= 720) {
+    return Math.min(clientWidth - 64, 520);
+  }
+
+  return Math.min(clientWidth, 402);
+}
+
 for (const viewport of viewports) {
   test(`keeps the envelope and exact Figma pages composed at ${viewport.width}px`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -46,9 +61,7 @@ for (const viewport of viewports) {
     expect(openMetrics.scrollWidth).toBe(openMetrics.clientWidth);
     expect(openMetrics.scrollY).toBeLessThanOrEqual(1);
 
-    const expectedWidth = viewport.width >= 900
-      ? Math.min(openMetrics.clientWidth - 64, 1174)
-      : Math.min(openMetrics.clientWidth, 402);
+    const expectedWidth = expectedReaderWidth(openMetrics.clientWidth);
     const pages = await page.locator('.design-page').all();
     expect(pages).toHaveLength(4);
     for (let index = 0; index < pages.length; index += 1) {
@@ -61,7 +74,7 @@ for (const viewport of viewports) {
   });
 }
 
-test('uses a substantial centered reading canvas on desktop', async ({ page }) => {
+test('centers a crisp reading column beside the desktop rail', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('./');
@@ -74,12 +87,22 @@ test('uses a substantial centered reading canvas on desktop', async ({ page }) =
 
   const reader = await page.locator('.reader').boundingBox();
   const firstPage = await page.locator('[data-page="1"]').boundingBox();
-  expect(reader.width).toBeGreaterThanOrEqual(1100);
-  expect(reader.width).toBeLessThanOrEqual(1174.5);
+  expect(reader.width).toBeCloseTo(expectedReaderWidth(1440), 0);
   expect(firstPage.width).toBeCloseTo(reader.width, 0);
   expect(firstPage.height).toBeCloseTo(firstPage.width * 339 / 402, 0);
   expect(firstPage.x).toBeCloseTo((1440 - firstPage.width) / 2, 0);
   expect(firstPage.y).toBeGreaterThanOrEqual(40);
+
+  // The 1174px source must stay at 2x density or better on a desktop column.
+  const sourceWidth = await page.locator('[data-page="1"] img').evaluate((image) => image.naturalWidth);
+  expect(sourceWidth / firstPage.width).toBeGreaterThanOrEqual(1.9);
+
+  const rail = page.locator('.reader-rail');
+  await expect(rail).toHaveClass(/is-visible/);
+  const railBox = await rail.boundingBox();
+  expect(railBox.x).toBeGreaterThanOrEqual(20);
+  expect(railBox.x + railBox.width).toBeLessThanOrEqual(firstPage.x);
+  await expect(page.locator('.rail__nav button[aria-current="true"]')).toHaveCount(1);
 });
 
 test('reflows through portrait, landscape, and portrait without drift', async ({ page }) => {
@@ -100,7 +123,7 @@ test('reflows through portrait, landscape, and portrait without drift', async ({
     }));
     expect(metrics.scrollWidth).toBe(metrics.clientWidth);
     const pageWidth = (await page.locator('[data-page="1"]').boundingBox()).width;
-    expect(pageWidth).toBeCloseTo(Math.min(metrics.clientWidth, 402), 0);
+    expect(pageWidth).toBeCloseTo(expectedReaderWidth(metrics.clientWidth), 0);
   }
 });
 
@@ -142,6 +165,53 @@ for (const viewport of [
     });
 
     await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
+  });
+}
+
+// Awkward window shapes: short laptops, resized windows, landscape phones, and the
+// sizes a 125-150% browser zoom produces. Opening happens immediately, with no wait
+// for the entrance, because that is what a visitor actually does.
+for (const viewport of [
+  { width: 960, height: 600 },
+  { width: 1024, height: 640 },
+  { width: 1280, height: 700 },
+  { width: 1440, height: 820 },
+  { width: 844, height: 390 },
+]) {
+  const label = `${viewport.width}x${viewport.height}`;
+
+  test(`keeps the whole envelope on screen when opened immediately at ${label}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('./');
+
+    const sealedShell = await page.locator('.envelope-shell').boundingBox();
+    const sealedPrompt = await page.locator('.gate__prompt').boundingBox();
+    expect(sealedShell.y, `${label} sealed top`).toBeGreaterThanOrEqual(0);
+    expect(sealedShell.x, `${label} sealed left`).toBeGreaterThanOrEqual(0);
+    expect(sealedShell.x + sealedShell.width, `${label} sealed right`)
+      .toBeLessThanOrEqual(viewport.width);
+    expect(sealedPrompt.y + sealedPrompt.height, `${label} sealed prompt`)
+      .toBeLessThanOrEqual(viewport.height);
+
+    await page.getByRole('button', { name: 'Open' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'card', { timeout: 6000 });
+    await page.waitForTimeout(420);
+
+    const shell = await page.locator('.envelope-shell').boundingBox();
+    const flap = await page.locator('.envelope__flap').boundingBox();
+    const letter = await page.locator('.envelope__letter').boundingBox();
+
+    // The raised flap is the topmost thing on screen; the envelope body the lowest.
+    expect(Math.min(flap.y, letter.y, shell.y), `${label} opened top`).toBeGreaterThanOrEqual(0);
+    expect(shell.y + shell.height, `${label} opened bottom`).toBeLessThanOrEqual(viewport.height);
+    expect(Math.min(flap.x, letter.x, shell.x), `${label} opened left`).toBeGreaterThanOrEqual(0);
+    expect(
+      Math.max(flap.x + flap.width, letter.x + letter.width, shell.x + shell.width),
+      `${label} opened right`,
+    ).toBeLessThanOrEqual(viewport.width);
+
+    await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
   });
 }
 

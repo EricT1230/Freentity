@@ -23,7 +23,8 @@ for (const width of widths) {
       await page.screenshot({ path: 'test-results/visual/390-card-rise.png' });
     }
     await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
-    await page.waitForTimeout(700);
+    // Long enough for the delayed navigation rail to finish arriving.
+    await page.waitForTimeout(1400);
     await page.screenshot({ path: `test-results/visual/${width}-open.png` });
 
     if (width === 390) {

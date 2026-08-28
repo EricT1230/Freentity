@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+import {
+  inspectPocketCoverage,
+  observeOpeningTransitions,
+  waitForOpeningTransition,
+} from './opening-helpers.js';
+
 const sourceAsset = './assets/figma-invitation.jpeg';
 const envelopeCardAsset = './assets/envelope-card.jpg';
 const envelopeLogoAsset = './assets/freentity-logo.png';
@@ -21,109 +27,6 @@ async function openInvitation(page, { reducedMotion = false } = {}) {
   });
 }
 
-async function observeOpeningTransitions(page) {
-  await page.evaluate(() => {
-    window.__openingTransitions = [];
-    window.__backPhaseSnapshot = null;
-    const activePhases = {};
-    const root = document.documentElement;
-    const stages = {
-      shell: document.querySelector('.envelope-shell'),
-      flap: document.querySelector('.envelope__flap'),
-      letter: document.querySelector('.envelope__letter'),
-    };
-
-    const phaseObserver = new MutationObserver(() => {
-      if (root.dataset.openingPhase !== 'back' || window.__backPhaseSnapshot) {
-        return;
-      }
-
-      const envelopeRect = stages.shell.getBoundingClientRect();
-      const samplePoints = [.12, .28, .44, .6, .76, .9].flatMap((yRatio) => (
-        [.12, .31, .5, .69, .88].map((xRatio) => [xRatio, yRatio])
-      ));
-      window.__backPhaseSnapshot = {
-        frontOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope-face--front')).opacity),
-        backOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope-face--back')).opacity),
-        sealOpacity: Number(getComputedStyle(stages.shell.querySelector('.envelope__seal')).opacity),
-        exposedSamples: samplePoints.filter(([xRatio, yRatio]) => {
-          const topElement = document.elementFromPoint(
-            envelopeRect.left + envelopeRect.width * xRatio,
-            envelopeRect.top + envelopeRect.height * yRatio,
-          );
-          return topElement?.closest('.envelope__letter') === stages.letter;
-        }).length,
-        exposedBelowEnvelope: [.2, .5, .8].filter((xRatio) => {
-          const topElement = document.elementFromPoint(
-            envelopeRect.left + envelopeRect.width * xRatio,
-            envelopeRect.bottom + 2,
-          );
-          return topElement?.closest('.envelope__letter') === stages.letter;
-        }).length,
-      };
-      phaseObserver.disconnect();
-    });
-    phaseObserver.observe(root, { attributes: true, attributeFilter: ['data-opening-phase'] });
-
-    for (const [stage, element] of Object.entries(stages)) {
-      for (const type of ['transitionstart', 'transitionend']) {
-        element.addEventListener(type, (event) => {
-          if (event.propertyName === 'transform') {
-            if (type === 'transitionstart') {
-              activePhases[stage] = document.documentElement.dataset.openingPhase;
-            }
-            window.__openingTransitions.push({
-              stage,
-              type,
-              phase: activePhases[stage],
-              at: performance.now(),
-              elapsedTime: event.elapsedTime,
-            });
-          }
-        });
-      }
-    }
-  });
-}
-
-async function waitForOpeningTransition(page, stage, type, phase) {
-  await page.waitForFunction(
-    ([expectedStage, expectedType, expectedPhase]) => window.__openingTransitions?.some(
-      (event) => event.stage === expectedStage
-        && event.type === expectedType
-        && (!expectedPhase || event.phase === expectedPhase),
-    ),
-    [stage, type, phase],
-    { timeout: 8000 },
-  );
-}
-
-async function inspectPocketCoverage(letter) {
-  return letter.evaluate((element) => {
-    const envelopeRect = element.closest('.envelope-shell').getBoundingClientRect();
-    const coveredPoints = [.7, .8, .9].flatMap((yRatio) => (
-      [.2, .5, .8].map((xRatio) => [xRatio, yRatio])
-    ));
-
-    return {
-      exposedSamples: coveredPoints.filter(([xRatio, yRatio]) => {
-        const topElement = document.elementFromPoint(
-          envelopeRect.left + envelopeRect.width * xRatio,
-          envelopeRect.top + envelopeRect.height * yRatio,
-        );
-        return topElement?.closest('.envelope__letter') === element;
-      }).length,
-      exposedBelowEnvelope: [.2, .5, .8].filter((xRatio) => {
-        const topElement = document.elementFromPoint(
-          envelopeRect.left + envelopeRect.width * xRatio,
-          envelopeRect.bottom + 2,
-        );
-        return topElement?.closest('.envelope__letter') === element;
-      }).length,
-    };
-  });
-}
-
 test('presents the closed envelope front with a floating Open invitation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
@@ -132,7 +35,11 @@ test('presents the closed envelope front with a floating Open invitation', async
   await expect(page.locator('#invitation-gate')).toBeVisible();
   await expect(page.locator('#invitation')).toHaveAttribute('aria-hidden', 'true');
   await expect(page.locator('.envelope-face--front')).toBeVisible();
-  await expect(page.locator('.envelope-face--back')).toHaveCount(1);
+  // One paper face now: a string tie closes the face you are already looking at.
+  await expect(page.locator('.envelope-face--back')).toHaveCount(0);
+  await expect(page.locator('.envelope__disc')).toHaveCount(2);
+  await expect(page.locator('.tie__cord--wrap')).toHaveCount(3);
+  await expect(page.locator('.tie__cord--tail')).toHaveCount(1);
   await expect(page.locator('.envelope-front__logo')).toHaveAttribute('src', envelopeLogoAsset);
   await expect(page.locator('.envelope-front__logo')).toHaveJSProperty('naturalWidth', 292);
   await expect(page.locator('.envelope-front__logo')).toHaveJSProperty('naturalHeight', 292);
@@ -250,8 +157,9 @@ test('matches the approved compact envelope front with a right-side line emboss'
 
   expect(shellRatio).toBeGreaterThanOrEqual(1.38);
   expect(shellRatio).toBeLessThanOrEqual(1.48);
-  expect(brandCenterRatio).toBeGreaterThanOrEqual(.4);
-  expect(brandCenterRatio).toBeLessThanOrEqual(.49);
+  // The lockup is centred on the flap, above the centred tie.
+  expect(brandCenterRatio).toBeGreaterThanOrEqual(.46);
+  expect(brandCenterRatio).toBeLessThanOrEqual(.54);
   expect(embossPresentation.tagName).toBe('svg');
   expect(embossPresentation.pathCount).toBeGreaterThanOrEqual(5);
   expect(embossPresentation.maskImage).toBe('none');
@@ -260,35 +168,167 @@ test('matches the approved compact envelope front with a right-side line emboss'
   expect(embossLeftRatio).toBeGreaterThan(.45);
 });
 
+test('hinges the flap inside a real perspective instead of a flat mirror flip', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+
+  const depth = await page.evaluate(() => {
+    const flap = document.querySelector('.envelope__flap');
+    const faces = [...flap.querySelectorAll('.envelope__flap-face')];
+    const backfaceOf = (element) => {
+      const style = getComputedStyle(element);
+      return style.backfaceVisibility || style.webkitBackfaceVisibility;
+    };
+
+    return {
+      // The flap must take perspective from its DIRECT parent, or folding it back
+      // projects orthographically and reads as a mirror flip rather than paper.
+      flapParentPerspective: getComputedStyle(flap.parentElement).perspective,
+      flapTransformStyle: getComputedStyle(flap).transformStyle,
+      flapOrigin: getComputedStyle(flap).transformOrigin,
+      flapClipPath: getComputedStyle(flap).clipPath,
+      faceCount: faces.length,
+      faceBackfaces: faces.map(backfaceOf),
+    };
+  });
+
+  expect(depth.flapParentPerspective).not.toBe('none');
+  expect(Number.parseFloat(depth.flapParentPerspective)).toBeGreaterThan(400);
+  // A clip-path on the flap itself would flatten it and cancel its backface pair.
+  expect(depth.flapTransformStyle).toBe('preserve-3d');
+  expect(depth.flapClipPath).toBe('none');
+  expect(depth.flapOrigin.endsWith('0px')).toBe(true);
+  expect(depth.faceCount).toBe(2);
+  expect(depth.faceBackfaces).toEqual(['hidden', 'hidden']);
+});
+
+test('keeps the cord measured in normalised path units at every envelope size', async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('./');
+
+    const tie = await page.evaluate(() => {
+      const wraps = [...document.querySelectorAll('.tie__cord--wrap')];
+      const tail = document.querySelector('.tie__cord--tail');
+      const read = (element) => getComputedStyle(element);
+
+      return {
+        // pathLength normalisation is what keeps the dash maths size independent.
+        pathLengths: wraps.map((wrap) => wrap.getAttribute('pathLength')),
+        tailPathLength: tail.getAttribute('pathLength'),
+        woundOffsets: wraps.map((wrap) => Number.parseFloat(read(wrap).strokeDashoffset)),
+        tailOffset: Number.parseFloat(read(tail).strokeDashoffset),
+        // Separate paths, because an SVG dash pattern restarts at every subpath.
+        subpathCounts: wraps.map((wrap) => (wrap.getAttribute('d').match(/M/g) ?? []).length),
+        fill: read(wraps[0]).fill,
+        cap: read(wraps[0]).strokeLinecap,
+      };
+    });
+
+    expect(tie.pathLengths, String(viewport.width)).toEqual(['100', '100', '100']);
+    expect(tie.tailPathLength).toBe('100');
+    expect(tie.woundOffsets).toEqual([0, 0, 0]);
+    // A short loose end is already out while tied, which is what reads as string.
+    expect(tie.tailOffset).toBeGreaterThan(0);
+    expect(tie.tailOffset).toBeLessThan(100);
+    expect(tie.subpathCounts).toEqual([1, 1, 1]);
+    expect(tie.fill).toBe('none');
+    expect(tie.cap).toBe('round');
+  }
+});
+
+test('sets the sealed stage in the deep green brand palette', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+
+  const palette = await page.evaluate(() => ({
+    gateImage: getComputedStyle(document.querySelector('#invitation-gate')).backgroundImage,
+    prompt: getComputedStyle(document.querySelector('.gate__prompt strong')).color,
+    themeColor: document.querySelector('meta[name="theme-color"]').content,
+  }));
+
+  const stops = [...palette.gateImage.matchAll(/rgba?\(([^)]+)\)/g)]
+    .map(([, channels]) => channels.split(/[,/]/).slice(0, 3).map(Number))
+    .filter(([red, green, blue]) => red + green + blue > 0);
+  expect(stops.length).toBeGreaterThan(2);
+  for (const [red, green, blue] of stops) {
+    expect(green).toBeGreaterThanOrEqual(red);
+    expect(green).toBeGreaterThanOrEqual(blue);
+  }
+
+  // The prompt now sits on that dark stage, so it has to read near-white.
+  const [red, green, blue] = palette.prompt.match(/\d+/g).slice(0, 3).map(Number);
+  expect(Math.min(red, green, blue)).toBeGreaterThan(200);
+  expect(palette.themeColor).toBe('#06170f');
+});
+
+test('tilts the sealed envelope toward a fine pointer and releases it on opening', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('./');
+
+  const readTilt = () => page.locator('.envelope-lift').evaluate((element) => ({
+    tiltX: Number.parseFloat(element.style.getPropertyValue('--tilt-x')),
+    tiltY: Number.parseFloat(element.style.getPropertyValue('--tilt-y')),
+  }));
+
+  const shell = await page.locator('.envelope-shell').boundingBox();
+  await page.mouse.move(shell.x + shell.width * 0.92, shell.y + shell.height * 0.9);
+  const tilted = await readTilt();
+  expect(tilted.tiltY).toBeGreaterThan(1);
+  expect(tilted.tiltX).toBeLessThan(-1);
+
+  await page.getByRole('button', { name: 'Open' }).click();
+  const released = await readTilt();
+  expect(released.tiltX).toBe(0);
+  expect(released.tiltY).toBe(0);
+});
+
 test('keeps keyboard focus inside the sealed invitation gate', async ({ page }) => {
   await page.goto('./');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Open' })).toBeFocused();
 });
 
-test('flips to the back before opening the flap and extracting the card', async ({ page }) => {
+test('unwinds the tie before opening the flap and extracting the card', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await observeOpeningTransitions(page);
 
-  const shell = page.locator('.envelope-shell');
-  const flap = page.locator('.envelope-face--back .envelope__flap');
-  const letter = page.locator('.envelope-face--back .envelope__letter');
+  const flap = page.locator('.envelope__flap');
+  const letter = page.locator('.envelope__letter');
   const initialLetter = await letter.boundingBox();
 
   await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'opening');
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'unwind');
 
-  await waitForOpeningTransition(page, 'shell', 'transitionend', 'flip');
-  const flippedM11 = await shell.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m11);
-  expect(flippedM11).toBeLessThan(-0.85);
-  await page.waitForFunction(() => window.__backPhaseSnapshot !== null);
-  const backPhase = await page.evaluate(() => window.__backPhaseSnapshot);
-  expect(backPhase.frontOpacity).toBeLessThan(.01);
-  expect(backPhase.backOpacity).toBeGreaterThan(.99);
-  expect(backPhase.sealOpacity).toBeGreaterThan(.9);
-  expect(backPhase.exposedSamples).toBe(0);
-  expect(backPhase.exposedBelowEnvelope).toBe(0);
+  // Wraps come off outermost first, so the outermost has already gone while the
+  // innermost still holds. Cord length is conserved: the tail grows by exactly
+  // what the winding gives up.
+  await page.waitForFunction(() => {
+    const offsets = [...document.querySelectorAll('.tie__cord--wrap')]
+      .map((cord) => Number.parseFloat(getComputedStyle(cord).strokeDashoffset));
+    return offsets[0] < -95 && offsets[2] > -60;
+  }, null, { timeout: 4000 });
+
+  const midUnwind = await page.evaluate(() => ({
+    outer: Number.parseFloat(getComputedStyle(document.querySelector('.tie__cord--wrap3')).strokeDashoffset),
+    inner: Number.parseFloat(getComputedStyle(document.querySelector('.tie__cord--wrap1')).strokeDashoffset),
+    tail: Number.parseFloat(getComputedStyle(document.querySelector('.tie__cord--tail')).strokeDashoffset),
+    flapAngle: new DOMMatrix(getComputedStyle(document.querySelector('.envelope__flap')).transform).m22,
+  }));
+  expect(midUnwind.outer).toBeLessThan(midUnwind.inner);
+  expect(midUnwind.tail).toBeLessThan(74);
+  // The flap stays shut for as long as any wrap still holds it.
+  expect(midUnwind.flapAngle).toBeGreaterThan(.99);
+
+  await waitForOpeningTransition(page, 'cord', 'transitionend', 'unwind');
+  await page.waitForFunction(() => window.__untiedSnapshot !== null, null, { timeout: 6000 });
+  const untied = await page.evaluate(() => window.__untiedSnapshot);
+  expect(untied.stillWound).toBe(0);
+  expect(untied.tailOffset).toBeCloseTo(0, 0);
+  expect(untied.flapAngle).toBeGreaterThan(.99);
+  expect(untied.exposedBelowEnvelope).toBe(0);
 
   await waitForOpeningTransition(page, 'flap', 'transitionstart', 'flap');
   await waitForOpeningTransition(page, 'flap', 'transitionend', 'flap');
@@ -309,27 +349,25 @@ test('flips to the back before opening the flap and extracting the card', async 
   const eventFor = (stage, type, phase) => transitions.find(
     (event) => event.stage === stage && event.type === type && event.phase === phase,
   );
-  const flipEnd = eventFor('shell', 'transitionend', 'flip');
+  const cordEnd = eventFor('cord', 'transitionend', 'unwind');
   const flapStart = eventFor('flap', 'transitionstart', 'flap');
   const flapEnd = eventFor('flap', 'transitionend', 'flap');
   const cardStart = eventFor('letter', 'transitionstart', 'card');
   const cardEnd = eventFor('letter', 'transitionend', 'card');
-  expect(flipEnd.elapsedTime).toBeGreaterThanOrEqual(.82);
-  expect(flapStart.at - flipEnd.at).toBeGreaterThanOrEqual(70);
-  expect(flapStart.at - flipEnd.at).toBeLessThanOrEqual(450);
+  expect(flapStart.at - cordEnd.at).toBeGreaterThanOrEqual(70);
+  expect(flapStart.at - cordEnd.at).toBeLessThanOrEqual(450);
   expect(flapEnd.elapsedTime).toBeGreaterThanOrEqual(.72);
   expect(cardStart.at - flapEnd.at).toBeGreaterThanOrEqual(70);
   expect(cardStart.at - flapEnd.at).toBeLessThanOrEqual(450);
   expect(cardEnd.elapsedTime).toBeGreaterThanOrEqual(.95);
 });
 
-test('reveals the letter progressively while the flap is lifting', async ({ page, browserName }) => {
+test('lets the card peek above the pocket mouth while the flap is lifting', async ({ page, browserName }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 3000 });
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 4000 });
 
-  const flap = page.locator('.envelope__flap');
   await page.waitForFunction(() => {
     const matrix = new DOMMatrix(getComputedStyle(document.querySelector('.envelope__flap')).transform);
     return document.documentElement.dataset.openingPhase === 'flap' && matrix.m22 < -.2;
@@ -342,12 +380,9 @@ test('reveals the letter progressively while the flap is lifting', async ({ page
     const letterRect = letter.getBoundingClientRect();
     const pocketRect = pocket.getBoundingClientRect();
     const letterStyle = getComputedStyle(letter);
+    // The card only shows in the band between its own top edge and the mouth.
     const visibleSamples = [
-      [.28, .44],
-      [.5, .44],
-      [.72, .44],
-      [.36, .5],
-      [.64, .5],
+      [.3, .33], [.5, .33], [.7, .33], [.4, .38], [.6, .38],
     ].filter(([x, y]) => {
       const visibleElement = document.elementFromPoint(
         shellRect.left + shellRect.width * x,
@@ -369,9 +404,10 @@ test('reveals the letter progressively while the flap is lifting', async ({ page
   });
 
   expect(exposure.flapAngle).toBeLessThan(-.2);
-  expect(exposure.letterTopRatio).toBeGreaterThan(.3);
-  expect(exposure.letterTopRatio).toBeLessThan(.58);
-  expect(exposure.letterTopRatio).toBeLessThan(exposure.pocketTopRatio + .12);
+  expect(exposure.letterTopRatio).toBeGreaterThan(.26);
+  expect(exposure.letterTopRatio).toBeLessThan(.42);
+  // The card has to clear the mouth to be seen at all.
+  expect(exposure.letterTopRatio).toBeLessThan(exposure.pocketTopRatio);
   expect(exposure.letterClipBottom).toBeGreaterThan(30);
   expect(exposure.letterClipBottom).toBeLessThan(60);
   expect(exposure.letterOpacity).toBe(1);
@@ -385,7 +421,7 @@ test('uses contact shadows to separate the opened envelope layers', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await page.getByRole('button', { name: 'Open' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 3000 });
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 4000 });
   await expect(page.locator('.envelope__inner-shadow')).toHaveCount(1);
   await page.waitForFunction(() => {
     const shadow = document.querySelector('.envelope__inner-shadow');
@@ -394,13 +430,15 @@ test('uses contact shadows to separate the opened envelope layers', async ({ pag
 
   const depth = await page.locator('.envelope-shell').evaluate((shell) => ({
     innerShadowOpacity: Number(getComputedStyle(shell.querySelector('.envelope__inner-shadow')).opacity),
-    pocketFilter: getComputedStyle(shell.querySelector('.envelope__pocket')).filter,
-    backFilter: getComputedStyle(shell.querySelector('.envelope-face--back')).filter,
+    pocketShadow: getComputedStyle(shell.querySelector('.envelope__pocket')).boxShadow,
+    flapShadow: getComputedStyle(shell.querySelector('.envelope__flap-face--inner')).boxShadow,
+    cordShadow: getComputedStyle(shell.querySelector('.envelope__tie')).filter,
   }));
 
   expect(depth.innerShadowOpacity).toBeGreaterThan(.12);
-  expect(depth.pocketFilter).not.toBe('none');
-  expect(depth.backFilter).not.toBe('none');
+  expect(depth.pocketShadow).not.toBe('none');
+  expect(depth.flapShadow).not.toBe('none');
+  expect(depth.cordShadow).toContain('drop-shadow');
 });
 
 test('opens once and lands on the first design page without a scroll jump', async ({ page }) => {
@@ -454,8 +492,9 @@ test('keeps a shorter but complete opening sequence when reduced motion is reque
   await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'opening');
 
-  await waitForOpeningTransition(page, 'shell', 'transitionend', 'flip');
-  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'back');
+  // Shorter, but every beat still happens: untie, then lift, then extract.
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'unwind');
+  await waitForOpeningTransition(page, 'cord', 'transitionend', 'unwind');
 
   await waitForOpeningTransition(page, 'flap', 'transitionend', 'flap');
   await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap-open');
@@ -470,7 +509,7 @@ test('keeps a shorter but complete opening sequence when reduced motion is reque
       && event.type === 'transitionend'
       && (!phase || event.phase === phase),
   ).elapsedTime;
-  expect(elapsedFor('shell')).toBeGreaterThanOrEqual(.35);
+  expect(elapsedFor('cord')).toBeGreaterThanOrEqual(.14);
   expect(elapsedFor('flap')).toBeGreaterThanOrEqual(.28);
   expect(elapsedFor('letter', 'card')).toBeGreaterThanOrEqual(.4);
   expect(elapsedFor('letter', 'card')).toBeLessThanOrEqual(.55);
