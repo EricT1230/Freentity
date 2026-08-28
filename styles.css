@@ -242,7 +242,7 @@ html[data-state="opening"] .gate {
 .envelope-front__name {
   color: #e7ece9;
   font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(1.25rem, 5.4vw, 2rem);
+  font-size: clamp(1.45rem, 5.9vw, 2.35rem);
   font-weight: 550;
   letter-spacing: .018em;
   line-height: 1;
@@ -275,9 +275,12 @@ html[data-state="opening"] .gate {
 
 .envelope-face--back {
   z-index: 1;
+  filter: drop-shadow(0 22px 22px rgb(8 30 22 / 24%));
   opacity: 0;
   transform: rotateY(180deg) translateZ(1px);
-  transition: opacity 0ms linear 500ms;
+  transition:
+    filter 900ms cubic-bezier(.2, .65, .2, 1),
+    opacity 0ms linear 450ms;
 }
 
 .envelope__back-panel {
@@ -314,9 +317,9 @@ html[data-state="opening"] .gate {
   transform: translateY(92%);
   transform-origin: center bottom;
   transition:
-    clip-path 1100ms cubic-bezier(.2, .72, .18, 1),
-    transform 1100ms cubic-bezier(.2, .72, .18, 1),
-    box-shadow 1100ms ease;
+    clip-path 780ms cubic-bezier(.2, .68, .2, 1),
+    transform 780ms cubic-bezier(.2, .68, .2, 1),
+    box-shadow 780ms ease;
   will-change: clip-path, transform;
 }
 
@@ -333,7 +336,7 @@ html[data-state="opening"] .gate {
 
 .envelope__flap {
   position: absolute;
-  z-index: 4;
+  z-index: 6;
   top: 0;
   right: 0;
   left: 0;
@@ -347,14 +350,14 @@ html[data-state="opening"] .gate {
   transform-origin: 50% 0;
   transform-style: preserve-3d;
   transition:
-    transform 850ms cubic-bezier(.55, .02, .35, 1),
+    transform 850ms cubic-bezier(.38, .02, .18, 1),
     z-index 0ms linear 425ms;
   will-change: transform;
 }
 
 .envelope__pocket {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   inset: 40% 0 0;
   display: block;
   overflow: hidden;
@@ -367,11 +370,34 @@ html[data-state="opening"] .gate {
   box-shadow:
     inset 0 -1px rgb(0 0 0 / 18%),
     inset 0 1px rgb(255 255 255 / 6%);
+  filter:
+    drop-shadow(0 -5px 5px rgb(6 26 19 / 28%))
+    drop-shadow(0 1px .5px rgb(239 244 241 / 15%));
+}
+
+.envelope__inner-shadow {
+  position: absolute;
+  z-index: 3;
+  top: 35%;
+  left: 10%;
+  display: block;
+  width: 80%;
+  height: 26%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 0%, rgb(4 20 14 / 42%), transparent 69%);
+  filter: blur(5px);
+  opacity: 0;
+  transform: translateY(-24%) scaleY(.55);
+  transform-origin: 50% 0;
+  transition:
+    opacity 460ms ease,
+    transform 720ms cubic-bezier(.2, .66, .2, 1);
+  pointer-events: none;
 }
 
 .envelope__seal {
   position: absolute;
-  z-index: 5;
+  z-index: 7;
   top: 51%;
   left: 50%;
   display: grid;
@@ -460,6 +486,23 @@ html[data-opening-phase="departing"] .envelope__flap {
   transform: rotateX(-180deg);
 }
 
+html[data-opening-phase="flap"] .envelope__letter,
+html[data-opening-phase="flap-open"] .envelope__letter {
+  box-shadow: 0 12px 22px rgb(8 33 24 / 29%);
+  clip-path: inset(0 0 32% 0);
+  transform: translateY(40%) scale(.995);
+}
+
+html[data-opening-phase="flap"] .envelope__inner-shadow {
+  opacity: .38;
+  transform: translateY(2%) scaleY(1);
+}
+
+html[data-opening-phase="flap-open"] .envelope__inner-shadow {
+  opacity: .16;
+  transform: translateY(22%) scaleY(.62);
+}
+
 html[data-opening-phase="flap"] .envelope__seal,
 html[data-opening-phase="flap-open"] .envelope__seal,
 html[data-opening-phase="card"] .envelope__seal,
@@ -472,7 +515,18 @@ html[data-opening-phase="card"] .envelope__letter,
 html[data-opening-phase="departing"] .envelope__letter {
   box-shadow: 0 18px 30px rgb(8 33 24 / 27%);
   clip-path: inset(0);
-  transform: translateY(-70%) scale(1.035);
+  transform: translateY(-70%) scale(1.025);
+  transition-duration: 1050ms, 1050ms, 1050ms;
+  transition-timing-function:
+    cubic-bezier(.16, .74, .2, 1),
+    cubic-bezier(.16, .74, .2, 1),
+    ease;
+}
+
+html[data-opening-phase="card"] .envelope__inner-shadow,
+html[data-opening-phase="departing"] .envelope__inner-shadow {
+  opacity: .08;
+  transform: translateY(34%) scaleY(.38);
 }
 
 html[data-state="opening"] .gate__prompt {
@@ -603,7 +657,7 @@ html[data-state="opening"] .invitation {
   }
 
   .reader {
-    width: min(calc(100vw - 128px), 760px);
+    width: min(calc(100vw - 64px), 1174px);
     padding: clamp(48px, 6vh, 72px) 0 clamp(72px, 9vh, 108px);
     gap: clamp(28px, 4vh, 44px);
   }
@@ -659,6 +713,15 @@ html[data-state="opening"] .invitation {
 
   .envelope__letter {
     transition-duration: 480ms, 480ms, 480ms;
+  }
+
+  html[data-opening-phase="card"] .envelope__letter,
+  html[data-opening-phase="departing"] .envelope__letter {
+    transition-duration: 480ms, 480ms, 480ms;
+  }
+
+  .envelope__inner-shadow {
+    transition-duration: 160ms, 220ms;
   }
 
   .envelope__seal {

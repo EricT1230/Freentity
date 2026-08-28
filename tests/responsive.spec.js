@@ -47,7 +47,7 @@ for (const viewport of viewports) {
     expect(openMetrics.scrollY).toBeLessThanOrEqual(1);
 
     const expectedWidth = viewport.width >= 900
-      ? Math.min(openMetrics.clientWidth - 128, 760)
+      ? Math.min(openMetrics.clientWidth - 64, 1174)
       : Math.min(openMetrics.clientWidth, 402);
     const pages = await page.locator('.design-page').all();
     expect(pages).toHaveLength(4);
@@ -74,8 +74,8 @@ test('uses a substantial centered reading canvas on desktop', async ({ page }) =
 
   const reader = await page.locator('.reader').boundingBox();
   const firstPage = await page.locator('[data-page="1"]').boundingBox();
-  expect(reader.width).toBeGreaterThanOrEqual(700);
-  expect(reader.width).toBeLessThanOrEqual(760.5);
+  expect(reader.width).toBeGreaterThanOrEqual(1100);
+  expect(reader.width).toBeLessThanOrEqual(1174.5);
   expect(firstPage.width).toBeCloseTo(reader.width, 0);
   expect(firstPage.height).toBeCloseTo(firstPage.width * 339 / 402, 0);
   expect(firstPage.x).toBeCloseTo((1440 - firstPage.width) / 2, 0);
@@ -119,18 +119,15 @@ for (const viewport of [
     const letter = page.locator('.envelope__letter');
     await page.getByRole('button', { name: 'Open' }).click();
 
-    await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'back', { timeout: 3000 });
-    const backBox = await shell.boundingBox();
-    expect(backBox.y).toBeGreaterThanOrEqual(12);
-    expect(backBox.y + backBox.height).toBeLessThanOrEqual(viewport.height - 12);
-
-    await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap-open', { timeout: 4000 });
+    await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 3000 });
+    await page.waitForTimeout(320);
     const openFlapBox = await flap.boundingBox();
     const openShellBox = await shell.boundingBox();
-    expect(openFlapBox.y).toBeGreaterThanOrEqual(12);
+    const peekingLetterBox = await letter.boundingBox();
+    expect(Math.min(openFlapBox.y, peekingLetterBox.y)).toBeGreaterThanOrEqual(12);
     expect(openShellBox.y + openShellBox.height).toBeLessThanOrEqual(viewport.height - 12);
     await page.screenshot({
-      path: `test-results/visual/desktop-${viewport.width}x${viewport.height}-flap-open.png`,
+      path: `test-results/visual/desktop-${viewport.width}x${viewport.height}-flap-lift.png`,
     });
 
     await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'card', { timeout: 3000 });

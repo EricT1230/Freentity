@@ -24,6 +24,7 @@ async function openInvitation(page, { reducedMotion = false } = {}) {
 async function observeOpeningTransitions(page) {
   await page.evaluate(() => {
     window.__openingTransitions = [];
+    const activePhases = {};
     const stages = {
       shell: document.querySelector('.envelope-shell'),
       flap: document.querySelector('.envelope__flap'),
@@ -34,9 +35,13 @@ async function observeOpeningTransitions(page) {
       for (const type of ['transitionstart', 'transitionend']) {
         element.addEventListener(type, (event) => {
           if (event.propertyName === 'transform') {
+            if (type === 'transitionstart') {
+              activePhases[stage] = document.documentElement.dataset.openingPhase;
+            }
             window.__openingTransitions.push({
               stage,
               type,
+              phase: activePhases[stage],
               at: performance.now(),
               elapsedTime: event.elapsedTime,
             });
@@ -47,12 +52,14 @@ async function observeOpeningTransitions(page) {
   });
 }
 
-async function waitForOpeningTransition(page, stage, type) {
+async function waitForOpeningTransition(page, stage, type, phase) {
   await page.waitForFunction(
-    ([expectedStage, expectedType]) => window.__openingTransitions?.some(
-      (event) => event.stage === expectedStage && event.type === expectedType,
+    ([expectedStage, expectedType, expectedPhase]) => window.__openingTransitions?.some(
+      (event) => event.stage === expectedStage
+        && event.type === expectedType
+        && (!expectedPhase || event.phase === expectedPhase),
     ),
-    [stage, type],
+    [stage, type, phase],
     { timeout: 8000 },
   );
 }
@@ -151,6 +158,26 @@ test('presents the closed envelope front with a floating Open invitation', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
+test('keeps the larger Freentity wordmark inside the envelope on phone and desktop', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844, minimumFontSize: 22.5 },
+    { width: 1440, height: 1000, minimumFontSize: 36 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('./');
+
+    const shellBox = await page.locator('.envelope-shell').boundingBox();
+    const nameBox = await page.locator('.envelope-front__name').boundingBox();
+    const fontSize = await page.locator('.envelope-front__name').evaluate((element) => (
+      Number.parseFloat(getComputedStyle(element).fontSize)
+    ));
+
+    expect(fontSize).toBeGreaterThanOrEqual(viewport.minimumFontSize);
+    expect(nameBox.x).toBeGreaterThan(shellBox.x);
+    expect(nameBox.x + nameBox.width).toBeLessThan(shellBox.x + shellBox.width);
+  }
+});
+
 test('preserves the official full-color logo on the extracted invitation card', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -221,7 +248,7 @@ test('flips to the back before opening the flap and extracting the card', async 
   await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'opening');
 
-  await waitForOpeningTransition(page, 'shell', 'transitionend');
+  await waitForOpeningTransition(page, 'shell', 'transitionend', 'flip');
   const flippedM11 = await shell.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m11);
   expect(flippedM11).toBeLessThan(-0.85);
   const faceOpacities = await page.locator('.envelope-shell').evaluate((element) => ({
@@ -238,29 +265,117 @@ test('flips to the back before opening the flap and extracting the card', async 
   expect(concealedLetter.exposedSamples).toBe(0);
   expect(concealedLetter.exposedBelowEnvelope).toBe(0);
 
-  await waitForOpeningTransition(page, 'flap', 'transitionstart');
-  await waitForOpeningTransition(page, 'flap', 'transitionend');
+  await waitForOpeningTransition(page, 'flap', 'transitionstart', 'flap');
+  await waitForOpeningTransition(page, 'flap', 'transitionend', 'flap');
   const openFlapM22 = await flap.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m22);
   expect(openFlapM22).toBeLessThan(-0.75);
   const flapOpenLetter = await inspectConcealedLetter(letter);
   expect(flapOpenLetter.exposedSamples).toBe(0);
   expect(flapOpenLetter.exposedBelowEnvelope).toBe(0);
   const readyLetter = await letter.boundingBox();
-  expect(Math.abs(readyLetter.y - initialLetter.y)).toBeLessThan(3);
+  expect(readyLetter.y).toBeLessThan(initialLetter.y - 40);
 
-  await waitForOpeningTransition(page, 'letter', 'transitionend');
+  await waitForOpeningTransition(page, 'letter', 'transitionend', 'card');
   const risenLetter = await letter.boundingBox();
-  expect(risenLetter.y).toBeLessThan(initialLetter.y - 30);
+  expect(risenLetter.y).toBeLessThan(readyLetter.y - 30);
   expect(await letter.evaluate((element) => getComputedStyle(element).clipPath)).toMatch(/^inset\(0px\)/);
 
   const transitions = await page.evaluate(() => window.__openingTransitions);
-  const eventFor = (stage, type) => transitions.find((event) => event.stage === stage && event.type === type);
-  const eventAt = (stage, type) => eventFor(stage, type).at;
-  expect(eventFor('shell', 'transitionend').elapsedTime).toBeGreaterThanOrEqual(.95);
-  expect(eventAt('flap', 'transitionstart') - eventAt('shell', 'transitionend')).toBeGreaterThanOrEqual(500);
-  expect(eventFor('flap', 'transitionend').elapsedTime).toBeGreaterThanOrEqual(.8);
-  expect(eventAt('letter', 'transitionstart') - eventAt('flap', 'transitionend')).toBeGreaterThanOrEqual(450);
-  expect(eventFor('letter', 'transitionend').elapsedTime).toBeGreaterThanOrEqual(1.05);
+  const eventFor = (stage, type, phase) => transitions.find(
+    (event) => event.stage === stage && event.type === type && event.phase === phase,
+  );
+  const flipEnd = eventFor('shell', 'transitionend', 'flip');
+  const flapStart = eventFor('flap', 'transitionstart', 'flap');
+  const flapEnd = eventFor('flap', 'transitionend', 'flap');
+  const cardStart = eventFor('letter', 'transitionstart', 'card');
+  const cardEnd = eventFor('letter', 'transitionend', 'card');
+  expect(flipEnd.elapsedTime).toBeGreaterThanOrEqual(.82);
+  expect(flapStart.at - flipEnd.at).toBeGreaterThanOrEqual(70);
+  expect(flapStart.at - flipEnd.at).toBeLessThanOrEqual(450);
+  expect(flapEnd.elapsedTime).toBeGreaterThanOrEqual(.72);
+  expect(cardStart.at - flapEnd.at).toBeGreaterThanOrEqual(70);
+  expect(cardStart.at - flapEnd.at).toBeLessThanOrEqual(450);
+  expect(cardEnd.elapsedTime).toBeGreaterThanOrEqual(.95);
+});
+
+test('reveals the letter progressively while the flap is lifting', async ({ page, browserName }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 3000 });
+
+  const flap = page.locator('.envelope__flap');
+  await page.waitForFunction(() => {
+    const matrix = new DOMMatrix(getComputedStyle(document.querySelector('.envelope__flap')).transform);
+    return document.documentElement.dataset.openingPhase === 'flap' && matrix.m22 < -.2;
+  });
+
+  const exposure = await page.locator('.envelope-shell').evaluate((shell) => {
+    const shellRect = shell.getBoundingClientRect();
+    const letter = shell.querySelector('.envelope__letter');
+    const pocket = shell.querySelector('.envelope__pocket');
+    const letterRect = letter.getBoundingClientRect();
+    const pocketRect = pocket.getBoundingClientRect();
+    const letterStyle = getComputedStyle(letter);
+    const visibleSamples = [
+      [.28, .44],
+      [.5, .44],
+      [.72, .44],
+      [.36, .5],
+      [.64, .5],
+    ].filter(([x, y]) => {
+      const visibleElement = document.elementFromPoint(
+        shellRect.left + shellRect.width * x,
+        shellRect.top + shellRect.height * y,
+      );
+      return visibleElement?.closest('.envelope__letter') === letter;
+    }).length;
+
+    return {
+      flapAngle: new DOMMatrix(getComputedStyle(shell.querySelector('.envelope__flap')).transform).m22,
+      letterTopRatio: (letterRect.top - shellRect.top) / shellRect.height,
+      pocketTopRatio: (pocketRect.top - shellRect.top) / shellRect.height,
+      letterClipBottom: Number(letterStyle.clipPath.match(/[\d.]+%/)?.[0].replace('%', '')),
+      letterOpacity: Number(letterStyle.opacity),
+      letterZIndex: Number(letterStyle.zIndex),
+      pocketZIndex: Number(getComputedStyle(pocket).zIndex),
+      visibleSamples,
+    };
+  });
+
+  expect(exposure.flapAngle).toBeLessThan(-.2);
+  expect(exposure.letterTopRatio).toBeGreaterThan(.3);
+  expect(exposure.letterTopRatio).toBeLessThan(.58);
+  expect(exposure.letterTopRatio).toBeLessThan(exposure.pocketTopRatio + .12);
+  expect(exposure.letterClipBottom).toBeGreaterThan(30);
+  expect(exposure.letterClipBottom).toBeLessThan(60);
+  expect(exposure.letterOpacity).toBe(1);
+  expect(exposure.letterZIndex).toBeLessThan(exposure.pocketZIndex);
+  if (browserName !== 'webkit') {
+    expect(exposure.visibleSamples).toBeGreaterThanOrEqual(2);
+  }
+});
+
+test('uses contact shadows to separate the opened envelope layers', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 3000 });
+  await expect(page.locator('.envelope__inner-shadow')).toHaveCount(1);
+  await page.waitForFunction(() => {
+    const shadow = document.querySelector('.envelope__inner-shadow');
+    return shadow && Number(getComputedStyle(shadow).opacity) > .12;
+  });
+
+  const depth = await page.locator('.envelope-shell').evaluate((shell) => ({
+    innerShadowOpacity: Number(getComputedStyle(shell.querySelector('.envelope__inner-shadow')).opacity),
+    pocketFilter: getComputedStyle(shell.querySelector('.envelope__pocket')).filter,
+    backFilter: getComputedStyle(shell.querySelector('.envelope-face--back')).filter,
+  }));
+
+  expect(depth.innerShadowOpacity).toBeGreaterThan(.12);
+  expect(depth.pocketFilter).not.toBe('none');
+  expect(depth.backFilter).not.toBe('none');
 });
 
 test('opens once and lands on the first design page without a scroll jump', async ({ page }) => {
@@ -304,26 +419,36 @@ test('keeps a shorter but complete opening sequence when reduced motion is reque
   await page.goto('./');
   await observeOpeningTransitions(page);
 
+  const innerShadowTransition = await page.locator('.envelope__inner-shadow').evaluate((element) => (
+    getComputedStyle(element).transitionDuration
+      .split(',')
+      .map((duration) => Number.parseFloat(duration) * (duration.includes('ms') ? .001 : 1))
+  ));
+  expect(Math.max(...innerShadowTransition)).toBeLessThanOrEqual(.25);
+
   await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'opening');
 
-  await waitForOpeningTransition(page, 'shell', 'transitionend');
+  await waitForOpeningTransition(page, 'shell', 'transitionend', 'flip');
   await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'back');
 
-  await waitForOpeningTransition(page, 'flap', 'transitionend');
+  await waitForOpeningTransition(page, 'flap', 'transitionend', 'flap');
   await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap-open');
 
-  await waitForOpeningTransition(page, 'letter', 'transitionstart');
+  await waitForOpeningTransition(page, 'letter', 'transitionstart', 'card');
   await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'card');
-  await waitForOpeningTransition(page, 'letter', 'transitionend');
+  await waitForOpeningTransition(page, 'letter', 'transitionend', 'card');
 
   const transitions = await page.evaluate(() => window.__openingTransitions);
-  const elapsedFor = (stage) => transitions.find(
-    (event) => event.stage === stage && event.type === 'transitionend',
+  const elapsedFor = (stage, phase) => transitions.find(
+    (event) => event.stage === stage
+      && event.type === 'transitionend'
+      && (!phase || event.phase === phase),
   ).elapsedTime;
   expect(elapsedFor('shell')).toBeGreaterThanOrEqual(.35);
   expect(elapsedFor('flap')).toBeGreaterThanOrEqual(.28);
-  expect(elapsedFor('letter')).toBeGreaterThanOrEqual(.4);
+  expect(elapsedFor('letter', 'card')).toBeGreaterThanOrEqual(.4);
+  expect(elapsedFor('letter', 'card')).toBeLessThanOrEqual(.55);
 
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
   expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(1);

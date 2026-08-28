@@ -15,10 +15,9 @@ for (const width of widths) {
       await page.waitForTimeout(450);
       await expect(page.locator('html')).toHaveAttribute('data-state', 'opening');
       await page.screenshot({ path: 'test-results/visual/390-opening.png' });
-      await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'back', { timeout: 3000 });
-      await page.screenshot({ path: 'test-results/visual/390-back.png' });
-      await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap-open', { timeout: 3000 });
-      await page.screenshot({ path: 'test-results/visual/390-flap-open.png' });
+      await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'flap', { timeout: 3000 });
+      await page.waitForTimeout(320);
+      await page.screenshot({ path: 'test-results/visual/390-flap-lift.png' });
       await expect(page.locator('html')).toHaveAttribute('data-opening-phase', 'card', { timeout: 3000 });
       await page.waitForTimeout(420);
       await page.screenshot({ path: 'test-results/visual/390-card-rise.png' });

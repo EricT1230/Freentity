@@ -8,8 +8,8 @@ const envelopeFlap = document.querySelector('.envelope__flap');
 const envelopeLetter = document.querySelector('.envelope__letter');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-const BACK_HOLD_DURATION = 560;
-const FLAP_HOLD_DURATION = 520;
+const BACK_HOLD_DURATION = 140;
+const FLAP_HOLD_DURATION = 140;
 const OPENING_FALLBACK_DURATION = 10000;
 const REDUCED_BACK_HOLD_DURATION = 180;
 const REDUCED_FLAP_HOLD_DURATION = 180;
