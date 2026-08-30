@@ -32,9 +32,9 @@ test('opens and reads cleanly in an actual iPhone WebKit device profile', async 
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 8000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
-  const firstPage = await page.locator('[data-page="1"]').boundingBox();
-  expect(firstPage.width).toBeCloseTo(390, 0);
-  expect(firstPage.height).toBeCloseTo(390 * 339 / 402, 0);
+  const artwork = await page.locator('.invitation-scroll').boundingBox();
+  expect(artwork.width).toBeCloseTo(366, 0);
+  expect(artwork.height).toBeCloseTo(364 * 11245 / 2340 + 2, 0);
 
   await page.setViewportSize({ width: 664, height: 390 });
   const landscape = await page.evaluate(() => ({
@@ -42,7 +42,7 @@ test('opens and reads cleanly in an actual iPhone WebKit device profile', async 
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(landscape.scrollWidth).toBe(landscape.clientWidth);
-  expect((await page.locator('[data-page="1"]').boundingBox()).width).toBeCloseTo(402, 0);
+  expect((await page.locator('.invitation-scroll').boundingBox()).width).toBeCloseTo(640, 0);
 });
 
 test('unties, lifts and extracts on iPhone WebKit without overflow', async ({ page }) => {

@@ -7,14 +7,9 @@ import {
 } from './opening-helpers.js';
 
 const sourceAsset = './assets/figma-invitation.jpeg';
+const responsiveSourceAsset = './assets/figma-invitation-1170.jpeg';
 const envelopeCardAsset = './assets/envelope-card.jpg';
 const envelopeLogoAsset = './assets/freentity-logo.png';
-const slices = [
-  { page: '1', start: 0, end: 339 },
-  { page: '2', start: 339, end: 724 },
-  { page: '3', start: 724, end: 1000 },
-  { page: '4', start: 1000, end: 1404 },
-];
 
 async function openInvitation(page, { reducedMotion = false } = {}) {
   if (reducedMotion) {
@@ -47,11 +42,14 @@ test('presents the closed envelope front with a floating Open invitation', async
   await expect(page.locator('.envelope-front__motif')).toHaveCount(0);
   await expect(page.locator('.envelope-front__emboss')).toHaveCount(1);
   await expect(page.locator('.envelope__letter img')).toHaveAttribute('src', envelopeCardAsset);
-  await expect(page.locator('.envelope__letter img')).toHaveAttribute('width', '1280');
-  await expect(page.locator('.envelope__letter img')).toHaveAttribute('height', '720');
-  await expect(page.locator('.envelope__letter img')).toHaveJSProperty('naturalWidth', 1280);
-  await expect(page.locator('.envelope__letter img')).toHaveJSProperty('naturalHeight', 720);
+  await expect(page.locator('.envelope__letter img')).toHaveAttribute('width', '1920');
+  await expect(page.locator('.envelope__letter img')).toHaveAttribute('height', '1080');
+  await expect(page.locator('.envelope__letter img')).toHaveJSProperty('naturalWidth', 1920);
+  await expect(page.locator('.envelope__letter img')).toHaveJSProperty('naturalHeight', 1080);
   await expect(page.locator('.gate__prompt')).toHaveText('Open');
+  await expect(page.locator('.envelope-front__brand')).toBeVisible();
+  await expect(page.locator('.envelope__flap-face--outer')).toHaveCSS('visibility', 'hidden');
+  await expect(page.locator('.envelope__flap-face--outer')).toHaveCSS('opacity', '0');
 
   const presentation = await page.getByRole('button', { name: 'Open' }).evaluate((button) => {
     const buttonStyle = getComputedStyle(button);
@@ -447,7 +445,7 @@ test('uses contact shadows to separate the opened envelope layers', async ({ pag
   expect(depth.cordShadow).toContain('drop-shadow');
 });
 
-test('opens once and lands on the first design page without a scroll jump', async ({ page }) => {
+test('opens once and lands on the invitation cover without a scroll jump', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   const openButton = page.getByRole('button', { name: 'Open' });
@@ -467,9 +465,9 @@ test('opens once and lands on the first design page without a scroll jump', asyn
   await expect(page.locator('#invitation')).toBeFocused();
   expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(1);
 
-  const firstPage = await page.locator('[data-page="1"]').boundingBox();
-  expect(firstPage.y).toBeGreaterThanOrEqual(0);
-  expect(firstPage.y).toBeLessThan(3);
+  const artwork = await page.locator('.invitation-scroll').boundingBox();
+  expect(artwork.y).toBeGreaterThanOrEqual(0);
+  expect(artwork.y).toBeLessThanOrEqual(24);
 });
 
 for (const key of ['Enter', 'Space']) {
@@ -533,58 +531,43 @@ test('fails open to the readable invitation if the interaction module cannot loa
   await expect(page.locator('#invitation')).toBeVisible();
   await expect(page.locator('#invitation')).toHaveAttribute('aria-hidden', 'false');
   await expect(page.locator('#invitation')).not.toHaveAttribute('inert', '');
-  await expect(page.locator('.design-page.is-visible')).toHaveCount(4);
+  await expect(page.locator('.invitation-scroll.is-visible')).toHaveCount(1);
 });
 
-test('shows the untouched Figma artwork as four complete, non-overlapping reading pages', async ({ page }) => {
+test('shows the untouched supplied artwork as one continuous invitation', async ({ page }) => {
   await openInvitation(page, { reducedMotion: true });
 
-  const pages = page.locator('.design-page');
-  await expect(pages).toHaveCount(slices.length);
-
-  for (const slice of slices) {
-    const designPage = page.locator(`[data-page="${slice.page}"]`);
-    await expect(designPage).toHaveAttribute('data-slice-start', String(slice.start));
-    await expect(designPage).toHaveAttribute('data-slice-end', String(slice.end));
-    await expect(designPage.locator('.design-page__crop > img')).toHaveAttribute('src', sourceAsset);
-    await expect(designPage.locator('.design-page__crop > img')).toHaveAttribute('width', '1174');
-    await expect(designPage.locator('.design-page__crop > img')).toHaveAttribute('height', '4096');
-    expect((await designPage.innerText()).trim()).toBe('');
-  }
-
-  const ranges = await pages.evaluateAll((elements) => elements.map((element) => ({
-    start: Number(element.dataset.sliceStart),
-    end: Number(element.dataset.sliceEnd),
-  })));
-  expect(ranges).toEqual(slices.map(({ start, end }) => ({ start, end })));
-  expect(ranges[0].start).toBe(0);
-  expect(ranges.at(-1).end).toBe(1404);
-  for (let index = 1; index < ranges.length; index += 1) {
-    expect(ranges[index].start).toBe(ranges[index - 1].end);
-  }
+  const artwork = page.locator('#invitation-reader > .invitation-scroll');
+  const image = artwork.locator(':scope > img');
+  await expect(artwork).toHaveCount(1);
+  await expect(image).toHaveAttribute('src', sourceAsset);
+  await expect(image).toHaveAttribute(
+    'srcset',
+    `${responsiveSourceAsset} 1170w, ${sourceAsset} 2340w`,
+  );
+  await expect(image).toHaveAttribute('width', '2340');
+  await expect(image).toHaveAttribute('height', '11245');
+  await expect(artwork.locator('.invitation-anchor')).toHaveCount(4);
+  expect((await artwork.innerText()).trim()).toBe('');
 });
 
-test('maps every page crop to the matching coordinates in the 402 by 1404 Figma frame', async ({ page }) => {
+test('maps every navigation anchor to the matching location in the continuous artwork', async ({ page }) => {
   await page.setViewportSize({ width: 402, height: 874 });
   await openInvitation(page, { reducedMotion: true });
 
-  for (const slice of slices) {
-    const designPage = page.locator(`[data-page="${slice.page}"]`);
-    const cropBox = await designPage.locator('.design-page__crop').boundingBox();
-    const imageBox = await designPage.locator('img').boundingBox();
+  const artwork = await page.locator('.invitation-scroll').boundingBox();
+  const image = await page.locator('.invitation-scroll > img').boundingBox();
+  expect(artwork.width).toBeCloseTo(378, 0);
+  expect(image.width).toBeCloseTo(376, 0);
+  expect(image.height).toBeCloseTo(image.width * 11245 / 2340, 0);
 
-    expect(cropBox.width).toBeCloseTo(402, 0);
-    expect(cropBox.height).toBeCloseTo(slice.end - slice.start, 0);
-    expect(imageBox.height).toBeCloseTo(1404, 0);
-    expect(imageBox.y).toBeCloseTo(cropBox.y - slice.start, 0);
+  for (const [pageNumber, ratio] of [['1', 0], ['2', .565], ['3', .653], ['4', .844]]) {
+    const anchor = await page.locator(`[data-page="${pageNumber}"]`).boundingBox();
+    expect(anchor.y - image.y).toBeCloseTo(image.height * ratio, 0);
   }
 });
 
-test('reveals each paper page as it enters the reading viewport', async ({ page }) => {
+test('reveals the continuous invitation after the envelope departs', async ({ page }) => {
   await openInvitation(page, { reducedMotion: false });
-  await expect(page.locator('[data-page="1"]')).toHaveClass(/is-visible/);
-
-  const fourthPage = page.locator('[data-page="4"]');
-  await fourthPage.scrollIntoViewIfNeeded();
-  await expect(fourthPage).toHaveClass(/is-visible/);
+  await expect(page.locator('.invitation-scroll')).toHaveClass(/is-visible/);
 });

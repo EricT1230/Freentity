@@ -11,9 +11,10 @@ const runtimeFiles = [
   'assets/event.ics',
   'assets/envelope-card.jpg',
   'assets/freentity-logo.png',
+  'assets/figma-invitation-1170.jpeg',
   'assets/figma-invitation.jpeg',
   'assets/social-preview.jpg',
-  'assets/social-preview-20260828.jpg',
+  'assets/social-preview-20260830.jpg',
 ];
 
 await rm(outputRoot, { recursive: true, force: true });

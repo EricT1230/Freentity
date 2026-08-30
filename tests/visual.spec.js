@@ -29,11 +29,11 @@ for (const width of widths) {
 
     if (width === 390) {
       for (const pageNumber of ['1', '2', '3', '4']) {
-        const designPage = page.locator(`[data-page="${pageNumber}"]`);
-        await designPage.scrollIntoViewIfNeeded();
-        await expect(designPage).toHaveClass(/is-visible/);
-        await page.waitForTimeout(700);
-        await designPage.screenshot({ path: `test-results/visual/390-page-${pageNumber}.png` });
+        const anchor = page.locator(`[data-page="${pageNumber}"]`);
+        await anchor.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+        await expect(page.locator('.invitation-scroll')).toHaveClass(/is-visible/);
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: `test-results/visual/390-section-${pageNumber}.png` });
       }
     }
   });

@@ -12,25 +12,18 @@ const viewports = [
   { width: 2048, height: 1150 },
 ];
 
-const sliceHeights = [339, 385, 276, 404];
-
-// The artwork is a 402 x 1404 phone design rasterised at 1174px wide. Phones show it
-// edge to edge; wider screens hold it near its natural card size so the source stays
-// above 1x density instead of being upscaled across the whole viewport.
+// The supplied long invitation uses 12px phone gutters and grows to an 820px
+// gallery column on wider screens.
 function expectedReaderWidth(clientWidth) {
-  if (clientWidth >= 1200) {
-    return Math.min(clientWidth - 96, 588);
-  }
-
   if (clientWidth >= 720) {
-    return Math.min(clientWidth - 64, 520);
+    return Math.min(clientWidth - 64, 820);
   }
 
-  return Math.min(clientWidth, 402);
+  return clientWidth - 24;
 }
 
 for (const viewport of viewports) {
-  test(`keeps the envelope and exact Figma pages composed at ${viewport.width}px`, async ({ page }) => {
+  test(`keeps the envelope and continuous artwork composed at ${viewport.width}px`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize(viewport);
     await page.goto('./');
@@ -62,15 +55,14 @@ for (const viewport of viewports) {
     expect(openMetrics.scrollY).toBeLessThanOrEqual(1);
 
     const expectedWidth = expectedReaderWidth(openMetrics.clientWidth);
-    const pages = await page.locator('.design-page').all();
-    expect(pages).toHaveLength(4);
-    for (let index = 0; index < pages.length; index += 1) {
-      const box = await pages[index].boundingBox();
-      expect(box.width).toBeCloseTo(expectedWidth, 0);
-      expect(box.height).toBeCloseTo(expectedWidth * sliceHeights[index] / 402, 0);
-      expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(openMetrics.clientWidth + 0.5);
-    }
+    const artwork = page.locator('.invitation-scroll');
+    await expect(artwork).toHaveCount(1);
+    await expect(page.locator('.invitation-anchor')).toHaveCount(4);
+    const box = await artwork.boundingBox();
+    expect(box.width).toBeCloseTo(expectedWidth, 0);
+    expect(box.height).toBeCloseTo((expectedWidth - 2) * 11245 / 2340 + 2, 0);
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(openMetrics.clientWidth + 0.5);
   });
 }
 
@@ -86,22 +78,22 @@ test('centers a crisp reading column beside the desktop rail', async ({ page }) 
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
 
   const reader = await page.locator('.reader').boundingBox();
-  const firstPage = await page.locator('[data-page="1"]').boundingBox();
+  const artwork = await page.locator('.invitation-scroll').boundingBox();
   expect(reader.width).toBeCloseTo(expectedReaderWidth(1440), 0);
-  expect(firstPage.width).toBeCloseTo(reader.width, 0);
-  expect(firstPage.height).toBeCloseTo(firstPage.width * 339 / 402, 0);
-  expect(firstPage.x).toBeCloseTo((1440 - firstPage.width) / 2, 0);
-  expect(firstPage.y).toBeGreaterThanOrEqual(40);
-
-  // The 1174px source must stay at 2x density or better on a desktop column.
-  const sourceWidth = await page.locator('[data-page="1"] img').evaluate((image) => image.naturalWidth);
-  expect(sourceWidth / firstPage.width).toBeGreaterThanOrEqual(1.9);
+  expect(artwork.width).toBeCloseTo(reader.width, 0);
+  expect(artwork.height).toBeCloseTo((artwork.width - 2) * 11245 / 2340 + 2, 0);
+  expect(artwork.x).toBeCloseTo((1440 - artwork.width) / 2, 0);
+  expect(artwork.y).toBeGreaterThanOrEqual(40);
+  await expect(page.locator('.invitation-scroll > img')).toHaveAttribute(
+    'srcset',
+    './assets/figma-invitation-1170.jpeg 1170w, ./assets/figma-invitation.jpeg 2340w',
+  );
 
   const rail = page.locator('.reader-rail');
   await expect(rail).toHaveClass(/is-visible/);
   const railBox = await rail.boundingBox();
   expect(railBox.x).toBeGreaterThanOrEqual(20);
-  expect(railBox.x + railBox.width).toBeLessThanOrEqual(firstPage.x);
+  expect(railBox.x + railBox.width).toBeLessThanOrEqual(artwork.x);
   await expect(page.locator('.rail__nav button[aria-current="true"]')).toHaveCount(1);
 });
 
@@ -122,8 +114,8 @@ test('reflows through portrait, landscape, and portrait without drift', async ({
       scrollWidth: document.documentElement.scrollWidth,
     }));
     expect(metrics.scrollWidth).toBe(metrics.clientWidth);
-    const pageWidth = (await page.locator('[data-page="1"]').boundingBox()).width;
-    expect(pageWidth).toBeCloseTo(expectedReaderWidth(metrics.clientWidth), 0);
+    const artworkWidth = (await page.locator('.invitation-scroll').boundingBox()).width;
+    expect(artworkWidth).toBeCloseTo(expectedReaderWidth(metrics.clientWidth), 0);
   }
 });
 
@@ -215,16 +207,17 @@ for (const viewport of [
   });
 }
 
-test('keeps the Figma design proportional when browser text size changes on 320px', async ({ page }) => {
+test('keeps the supplied design proportional when browser text size changes on 320px', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 320, height: 667 });
   await page.goto('./');
   await page.addStyleTag({ content: 'html { font-size: 125% !important; }' });
   await page.getByRole('button', { name: 'Open' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-state', 'open', { timeout: 4000 });
+  await expect(page.locator('.invitation-scroll')).toHaveClass(/is-visible/);
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
-  const firstPage = await page.locator('[data-page="1"]').boundingBox();
-  expect(firstPage.width).toBeCloseTo(320, 0);
-  expect(firstPage.height).toBeCloseTo(320 * 339 / 402, 0);
+  const artwork = await page.locator('.invitation-scroll').boundingBox();
+  expect(artwork.width).toBeCloseTo(296, 0);
+  expect(artwork.height).toBeCloseTo(294 * 11245 / 2340 + 2, 0);
 });

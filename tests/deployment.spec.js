@@ -32,9 +32,10 @@ test('builds a minimal GitHub Pages artifact containing only the exact design an
     '.nojekyll',
     'assets/envelope-card.jpg',
     'assets/event.ics',
+    'assets/figma-invitation-1170.jpeg',
     'assets/figma-invitation.jpeg',
     'assets/freentity-logo.png',
-    'assets/social-preview-20260828.jpg',
+    'assets/social-preview-20260830.jpg',
     'assets/social-preview.jpg',
     'envelope.css',
     'index.html',
@@ -150,9 +151,10 @@ test('all runtime assets resolve below the repository path', async ({ request })
     './assets/event.ics',
     './assets/envelope-card.jpg',
     './assets/freentity-logo.png',
+    './assets/figma-invitation-1170.jpeg',
     './assets/figma-invitation.jpeg',
     './assets/social-preview.jpg',
-    './assets/social-preview-20260828.jpg',
+    './assets/social-preview-20260830.jpg',
   ];
 
   for (const path of runtimePaths) {
@@ -163,7 +165,7 @@ test('all runtime assets resolve below the repository path', async ({ request })
 
 test('publishes an absolute social preview for link unfurlers', async ({ page, request }) => {
   const siteUrl = 'https://freentity.pages.dev/';
-  const previewUrl = `${siteUrl}assets/social-preview-20260828.jpg`;
+  const previewUrl = `${siteUrl}assets/social-preview-20260830.jpg`;
 
   await page.goto('./');
 
@@ -204,7 +206,7 @@ test('publishes an absolute social preview for link unfurlers', async ({ page, r
     '帆益科技新廠落成開幕暨技術發表邀請函封面',
   );
 
-  const preview = await request.get('./assets/social-preview-20260828.jpg');
+  const preview = await request.get('./assets/social-preview-20260830.jpg');
   expect(preview.ok()).toBe(true);
   expect(preview.headers()['content-type']).toBe('image/jpeg');
 });

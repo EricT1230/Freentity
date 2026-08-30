@@ -2,7 +2,8 @@ const root = document.documentElement;
 const gate = document.querySelector('#invitation-gate');
 const openButton = document.querySelector('#open-invitation');
 const invitation = document.querySelector('#invitation');
-const designPages = [...document.querySelectorAll('.design-page')];
+const invitationScroll = document.querySelector('.invitation-scroll');
+const sectionAnchors = [...document.querySelectorAll('.invitation-anchor')];
 const envelopeStage = document.querySelector('.gate__stage');
 const envelopeLift = document.querySelector('.envelope-lift');
 const envelopeShell = document.querySelector('.envelope-shell');
@@ -21,9 +22,9 @@ const toast = document.querySelector('#reader-toast');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(pointer: fine)');
 
-const UNWIND_HOLD_DURATION = 180;
-const FLAP_HOLD_DURATION = 140;
-const OPENING_FALLBACK_DURATION = 10000;
+const UNWIND_HOLD_DURATION = 240;
+const FLAP_HOLD_DURATION = 260;
+const OPENING_FALLBACK_DURATION = 12000;
 const REDUCED_UNWIND_HOLD_DURATION = 180;
 const REDUCED_FLAP_HOLD_DURATION = 180;
 const REDUCED_OPENING_FALLBACK_DURATION = 4000;
@@ -32,16 +33,13 @@ const BAR_REVEAL_SCROLL = 40;
 const TOAST_DURATION = 2600;
 const MAX_TILT_X = 7;
 const MAX_TILT_Y = 10;
-const THEME_OPEN = '#f2f4f2';
+const THEME_OPEN = '#06170f';
 
-const sectionRatios = new Map();
 // Single source of truth for section names: the rail's own navigation labels.
 const sectionNames = new Map(
   navButtons.map((button) => [button.dataset.goto, button.querySelector('span').textContent.trim()]),
 );
 
-let revealObserver;
-let sectionObserver;
 let openingFallbackTimer;
 let phaseTimer;
 let railTimer;
@@ -56,36 +54,12 @@ function resetScrollPosition() {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
-function revealAllPages() {
-  designPages.forEach((designPage) => designPage.classList.add('is-visible'));
+function revealInvitation() {
+  invitationScroll?.classList.add('is-visible');
 }
 
-function activatePageReveals() {
-  designPages[0]?.classList.add('is-visible');
-
-  if (reducedMotion.matches || !('IntersectionObserver' in window)) {
-    revealAllPages();
-    return;
-  }
-
-  revealObserver ??= new IntersectionObserver(
-    (entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          return;
-        }
-
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: '0px 0px -8% 0px',
-      threshold: 0.12,
-    },
-  );
-
-  designPages.slice(1).forEach((designPage) => revealObserver.observe(designPage));
+function activateInvitationReveal() {
+  window.requestAnimationFrame(revealInvitation);
 }
 
 /* ------------------------------------------------------------- envelope tilt */
@@ -124,6 +98,7 @@ function updateProgress() {
   progress?.classList.toggle('is-active', window.scrollY > 8);
   // The header stays out of the way over the cover, then rides along.
   bar?.classList.toggle('is-visible', window.scrollY > BAR_REVEAL_SCROLL);
+  markScrolledSection();
 }
 
 function requestProgressUpdate() {
@@ -184,7 +159,7 @@ function markCurrentSection(pageNumber) {
 }
 
 function scrollToPage(pageNumber) {
-  const target = designPages.find((designPage) => designPage.dataset.page === pageNumber);
+  const target = sectionAnchors.find((anchor) => anchor.dataset.page === pageNumber);
 
   if (!target) {
     return;
@@ -197,43 +172,37 @@ function scrollToPage(pageNumber) {
   });
 }
 
-function markLeadingSection() {
-  let leadingPage;
-  let leadingRatio = 0;
-
-  // sectionRatios keeps document order, so ties resolve to the higher page.
-  for (const [pageNumber, ratio] of sectionRatios) {
-    if (ratio > leadingRatio) {
-      leadingRatio = ratio;
-      leadingPage = pageNumber;
-    }
-  }
-
-  if (leadingPage) {
-    markCurrentSection(leadingPage);
-  }
-}
-
-function activateSectionTracking() {
-  if (!navButtons.length || !('IntersectionObserver' in window)) {
+function markScrolledSection() {
+  if (!sectionAnchors.length) {
     return;
   }
 
-  designPages.forEach((designPage) => sectionRatios.set(designPage.dataset.page, 0));
+  const reachedDocumentEnd = window.scrollY + window.innerHeight
+    >= document.documentElement.scrollHeight - 4;
+  if (reachedDocumentEnd) {
+    markCurrentSection(sectionAnchors.at(-1).dataset.page);
+    return;
+  }
 
-  sectionObserver ??= new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        sectionRatios.set(entry.target.dataset.page, entry.isIntersecting ? entry.intersectionRatio : 0);
-      });
-      markLeadingSection();
-    },
-    // Pages are aligned to the top of the viewport when jumped to, so the current
-    // section is the one filling the top band rather than the vertical middle.
-    { rootMargin: '0px 0px -74% 0px', threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] },
-  );
+  // A top-weighted line keeps short adjacent sections (WHAT'S NEW / RUNDOWN)
+  // from switching labels before their own heading has actually left the top.
+  const readingLine = window.scrollY + window.innerHeight * 0.12;
+  let currentPage = sectionAnchors[0].dataset.page;
 
-  designPages.forEach((designPage) => sectionObserver.observe(designPage));
+  sectionAnchors.forEach((anchor) => {
+    const anchorTop = anchor.getBoundingClientRect().top + window.scrollY;
+    if (anchorTop <= readingLine) {
+      currentPage = anchor.dataset.page;
+    }
+  });
+
+  markCurrentSection(currentPage);
+}
+
+function activateSectionTracking() {
+  if (!navButtons.length || !sectionAnchors.length) {
+    return;
+  }
   markCurrentSection('1');
 }
 
@@ -282,7 +251,7 @@ function finishOpening() {
   gate.removeAttribute('aria-busy');
   invitation.setAttribute('aria-hidden', 'false');
   invitation.removeAttribute('inert');
-  activatePageReveals();
+  activateInvitationReveal();
   activateReaderChrome();
 
   window.requestAnimationFrame(() => {
@@ -368,7 +337,7 @@ if (root.dataset.state === 'open') {
   gate.setAttribute('aria-hidden', 'true');
   invitation.setAttribute('aria-hidden', 'false');
   invitation.removeAttribute('inert');
-  revealAllPages();
+  revealInvitation();
   activateReaderChrome();
 } else {
   invitation.setAttribute('aria-hidden', 'true');
@@ -386,9 +355,7 @@ reducedMotion.addEventListener('change', () => {
   }
 
   releasePointerTilt();
-  revealObserver?.disconnect();
-  revealObserver = undefined;
-  revealAllPages();
+  revealInvitation();
 });
 
 window.addEventListener('pagehide', () => {

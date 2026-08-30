@@ -1,6 +1,6 @@
-/* Freentity invitation — the reading surface and its navigation chrome.
-   The four .design-page crops are never restyled below 720px so the published
-   Figma artwork stays pixel-identical to the approved PDF. */
+/* Freentity invitation — continuous artwork reader and restrained gallery chrome.
+   The supplied invitation remains one untouched raster; layout only controls its
+   responsive size and the invisible navigation anchors layered above it. */
 
 .invitation {
   display: block;
@@ -8,11 +8,17 @@
   min-height: 100vh;
   min-height: 100svh;
   outline: none;
+  background: var(--green-950);
 }
 
 html[data-state="sealed"] .invitation,
 html[data-state="opening"] .invitation {
   display: none;
+}
+
+html[data-state="open"],
+html[data-state="open"] body {
+  background: var(--green-950);
 }
 
 /* ------------------------------------------------------------ reading canvas */
@@ -21,60 +27,81 @@ html[data-state="opening"] .invitation {
   position: relative;
   display: block;
   width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 32% at 50% 0%, rgb(73 103 87 / 18%), transparent 78%),
+    linear-gradient(90deg, #04110b 0%, #071a12 26%, #081c13 50%, #071a12 74%, #04110b 100%);
+}
+
+.reader-stage::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 9%, rgb(222 230 226 / 3%) 10%, transparent 11%),
+    linear-gradient(90deg, transparent 43%, rgb(222 230 226 / 2.5%) 44%, transparent 45%),
+    linear-gradient(90deg, transparent 78%, rgb(222 230 226 / 2%) 79%, transparent 80%),
+    var(--grain);
+  background-size: auto, auto, auto, 180px 180px;
+  content: "";
+  opacity: .18;
+  pointer-events: none;
 }
 
 .reader {
-  display: grid;
-  width: min(100%, 402px);
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(calc(100% - 24px), 820px);
   margin: 0 auto;
-  padding: 0 0 max(88px, calc(env(safe-area-inset-bottom) + 78px));
-  gap: 14px;
+  padding: 12px 0 max(104px, calc(env(safe-area-inset-bottom) + 92px));
 }
 
-.design-page {
+.invitation-scroll {
   position: relative;
+  display: block;
   width: 100%;
-  aspect-ratio: var(--page-ratio);
-  opacity: 0;
-  background: #fff;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(225 232 228 / 11%);
+  border-radius: 2px;
+  background: #071c13;
   box-shadow:
-    0 18px 42px rgb(25 55 43 / 13%),
-    0 2px 8px rgb(25 55 43 / 8%);
-  transform: translateY(20px);
+    0 46px 100px rgb(0 5 3 / 50%),
+    0 10px 30px rgb(0 5 3 / 34%);
+  opacity: 0;
+  transform: translateY(18px) scale(.995);
   transform-origin: center top;
   transition:
-    opacity 580ms ease,
-    transform 760ms var(--ease-settle);
+    opacity 700ms ease,
+    transform 980ms var(--ease-expo);
 }
 
-/* The first page must sit flush at the very top the moment the gate leaves,
-   so it fades in without ever displacing its own top edge. */
-.design-page[data-page="1"] {
-  transform: none;
-}
-
-.design-page.is-visible {
+.invitation-scroll.is-visible {
   opacity: 1;
   transform: none;
 }
 
-.design-page__crop {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.design-page__crop > img {
-  position: absolute;
-  top: var(--image-top);
-  left: 0;
+.invitation-scroll > img {
   display: block;
   width: 100%;
-  height: var(--image-height);
+  height: auto;
   max-width: none;
-  object-fit: cover;
-  object-position: 50% 0;
+  filter: none;
   user-select: none;
+  pointer-events: none;
+}
+
+.invitation-anchor {
+  position: absolute;
+  top: var(--anchor-y);
+  left: 0;
+  display: block;
+  width: 1px;
+  height: 1px;
+  scroll-margin-top: 68px;
   pointer-events: none;
 }
 
@@ -87,7 +114,7 @@ html[data-state="opening"] .invitation {
   right: 0;
   left: 0;
   height: 2px;
-  background: rgb(23 60 47 / 8%);
+  background: rgb(255 255 255 / 7%);
   opacity: 0;
   transition: opacity 400ms ease;
   pointer-events: none;
@@ -101,7 +128,7 @@ html[data-state="opening"] .invitation {
   display: block;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, var(--green-500), var(--green-300));
+  background: linear-gradient(90deg, #8f9a94, #e1e6e3);
   transform: scaleX(var(--reading-progress, 0));
   transform-origin: left center;
 }
@@ -115,15 +142,15 @@ html[data-state="opening"] .invitation {
   right: 0;
   left: 0;
   display: flex;
-  height: 52px;
+  height: 54px;
   padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
-  border-bottom: 1px solid rgb(23 60 47 / 8%);
+  border-bottom: 1px solid rgb(232 237 234 / 9%);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: rgb(252 253 252 / 88%);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  background: rgb(4 18 12 / 86%);
+  backdrop-filter: blur(16px) saturate(.95);
+  -webkit-backdrop-filter: blur(16px) saturate(.95);
   opacity: 0;
   transform: translateY(-100%);
   transition: opacity 320ms ease, transform 420ms var(--ease-expo);
@@ -140,37 +167,43 @@ html[data-state="opening"] .invitation {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: var(--green-600);
-  font-size: .86rem;
-  font-weight: 600;
-  letter-spacing: .06em;
+  color: var(--stone-100);
+  font-size: .84rem;
+  font-weight: 560;
+  letter-spacing: .08em;
   text-decoration: none;
 }
 
 .reader-bar__brand img {
-  width: 26px;
-  height: 26px;
+  width: 27px;
+  height: 27px;
+  filter: none;
+  mix-blend-mode: normal;
+  opacity: 1;
 }
 
 .reader-bar__brand:hover {
-  color: var(--green-800);
+  color: #fff;
 }
 
-.reader-bar__brand:focus-visible {
-  outline: 2px solid var(--green-500);
+.reader-bar__brand:focus-visible,
+.rail__brand:focus-visible {
+  outline: 2px solid var(--stone-300);
   outline-offset: 4px;
   border-radius: 4px;
 }
 
 .reader-bar__section {
   margin: 0;
-  color: #4a5651;
-  font-size: .7rem;
+  overflow: hidden;
+  color: rgb(229 235 232 / 72%);
+  font-size: .67rem;
   letter-spacing: .18em;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ------------------------------------------------------- tool dock (< 1200px) */
+/* ------------------------------------------------------- tool dock (< 1360px) */
 
 .reader-rail {
   position: fixed;
@@ -198,15 +231,16 @@ html[data-state="opening"] .invitation {
 
 .rail__tools {
   display: flex;
+  max-width: 100%;
   padding: 5px;
-  border: 1px solid rgb(23 60 47 / 10%);
+  border: 1px solid rgb(231 236 233 / 15%);
   border-radius: 999px;
-  background: rgb(252 253 252 / 88%);
+  background: rgb(207 214 210 / 90%);
   box-shadow:
-    0 14px 34px rgb(12 42 32 / 16%),
-    0 2px 6px rgb(12 42 32 / 8%);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    0 18px 42px rgb(0 6 4 / 38%),
+    inset 0 1px rgb(255 255 255 / 56%);
+  backdrop-filter: blur(18px) saturate(.8);
+  -webkit-backdrop-filter: blur(18px) saturate(.8);
   gap: 2px;
   pointer-events: auto;
 }
@@ -223,11 +257,11 @@ html[data-state="opening"] .invitation {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  color: var(--green-600);
+  color: var(--green-800);
   background: transparent;
-  font-size: .72rem;
-  font-weight: 500;
-  letter-spacing: .04em;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .035em;
   line-height: 1;
   text-align: center;
   text-decoration: none;
@@ -247,8 +281,8 @@ html[data-state="opening"] .invitation {
 }
 
 .tool:hover {
-  color: var(--green-800);
-  background: rgb(23 60 47 / 7%);
+  color: var(--green-950);
+  background: rgb(255 255 255 / 42%);
 }
 
 .tool:active {
@@ -256,7 +290,7 @@ html[data-state="opening"] .invitation {
 }
 
 .tool:focus-visible {
-  outline: 2px solid var(--green-500);
+  outline: 2px solid var(--green-700);
   outline-offset: 2px;
 }
 
@@ -269,10 +303,11 @@ html[data-state="opening"] .invitation {
   left: 50%;
   margin: 0;
   padding: 10px 18px;
+  border: 1px solid rgb(235 239 237 / 14%);
   border-radius: 999px;
   color: var(--stone-50);
-  background: rgb(12 42 32 / 94%);
-  box-shadow: 0 12px 30px rgb(12 42 32 / 26%);
+  background: rgb(4 18 12 / 94%);
+  box-shadow: 0 12px 30px rgb(0 6 4 / 38%);
   font-size: .8rem;
   letter-spacing: .04em;
   opacity: 0;
@@ -290,76 +325,52 @@ html[data-state="opening"] .invitation {
 
 @media (max-width: 430px) {
   .reader {
-    gap: 10px;
+    width: calc(100% - 24px);
   }
 
-  .design-page {
-    box-shadow: 0 10px 24px rgb(25 55 43 / 10%);
+  .invitation-scroll {
+    box-shadow: 0 24px 54px rgb(0 5 3 / 46%);
   }
 
   .tool {
     min-width: 68px;
-    font-size: .68rem;
+    padding-inline: 9px;
+    font-size: .66rem;
   }
 }
 
 /* ------------------------------------------------- tablet and small desktop */
 
 @media (min-width: 720px) {
-  .reader-stage::before {
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    background:
-      repeating-linear-gradient(0deg, rgb(23 60 47 / 4%) 0 1px, transparent 1px 52px),
-      repeating-linear-gradient(90deg, rgb(23 60 47 / 4%) 0 1px, transparent 1px 52px);
-    mask-image: linear-gradient(180deg, #000 0%, transparent 42%);
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 42%);
-    content: "";
-    pointer-events: none;
-  }
-
   .reader {
-    width: min(100% - 64px, 520px);
-    padding: clamp(44px, 6vh, 72px) 0 clamp(104px, 12vh, 140px);
-    gap: clamp(20px, 3vh, 30px);
+    width: min(calc(100% - 64px), 820px);
+    padding: clamp(42px, 6vh, 72px) 0 clamp(112px, 12vh, 152px);
   }
 
-  .design-page {
-    border-radius: 2px;
-    outline: 1px solid rgb(23 60 47 / 7%);
-    outline-offset: -1px;
+  .invitation-scroll {
+    border-radius: 3px;
     box-shadow:
-      0 30px 66px rgb(25 55 43 / 15%),
-      0 3px 12px rgb(25 55 43 / 8%);
+      0 60px 130px rgb(0 5 3 / 54%),
+      0 16px 44px rgb(0 5 3 / 34%);
   }
 }
 
 /* ------------------------------------------------------------- desktop rail */
 
-@media (min-width: 1200px) {
-  .reader {
-    width: min(100% - 96px, 588px);
-  }
-}
-
-@media (min-width: 1200px) and (min-height: 640px) {
+@media (min-width: 1360px) and (min-height: 680px) {
   .reader-bar {
     display: none;
   }
 
   .reader-rail {
-    /* Centred inside the gutter left of the reading column, so the composition
-       stays balanced instead of hugging the viewport edge.
-       Gutter = 50vw - halfColumn(294px); rail is 246px wide. */
-    inset: 50% auto auto max(24px, calc((50vw - 540px) / 2));
+    inset: 50% auto auto max(28px, calc((50vw - 410px) / 2 - 262px));
     display: grid;
-    width: 246px;
-    max-height: calc(100svh - 56px);
+    width: min(230px, calc((100vw - 820px) / 2 - 56px));
+    max-height: calc(100svh - 64px);
     padding: 0;
     overflow: auto;
     align-content: safe center;
-    gap: 26px;
+    gap: 25px;
     justify-content: stretch;
     transform: translateY(calc(-50% + 12px));
     pointer-events: auto;
@@ -371,28 +382,32 @@ html[data-state="opening"] .invitation {
 
   .rail__brand {
     display: flex;
-    margin: 0;
     align-items: center;
     gap: 12px;
+    color: var(--stone-100);
+    text-decoration: none;
   }
 
   .rail__brand img {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
+    filter: none;
+    mix-blend-mode: normal;
+    opacity: 1;
   }
 
   .rail__brand-text {
     display: grid;
-    color: var(--green-600);
+    color: var(--stone-100);
     font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: .05em;
+    font-weight: 560;
+    letter-spacing: .06em;
     line-height: 1.25;
   }
 
   .rail__brand-text em {
-    color: #4a5651;
-    font-size: .62rem;
+    color: rgb(225 232 228 / 58%);
+    font-size: .6rem;
     font-style: normal;
     font-weight: 500;
     letter-spacing: .3em;
@@ -401,43 +416,43 @@ html[data-state="opening"] .invitation {
   .rail__facts {
     display: grid;
     margin: 0;
-    padding: 18px 0 0;
-    border-top: 1px solid rgb(23 60 47 / 12%);
-    gap: 14px;
+    padding: 20px 0 0;
+    border-top: 1px solid rgb(225 232 228 / 14%);
+    gap: 16px;
   }
 
   .rail__facts dt {
-    color: #4a5651;
-    font-size: .62rem;
+    color: rgb(225 232 228 / 54%);
+    font-size: .6rem;
     font-weight: 600;
     letter-spacing: .26em;
   }
 
   .rail__facts dd {
     margin: 5px 0 0;
-    color: var(--green-600);
-    font-size: .84rem;
-    line-height: 1.6;
+    color: rgb(242 245 243 / 84%);
+    font-size: .8rem;
+    line-height: 1.68;
   }
 
   .rail__nav {
     display: grid;
     padding: 18px 0 0;
-    border-top: 1px solid rgb(23 60 47 / 12%);
+    border-top: 1px solid rgb(225 232 228 / 14%);
     gap: 2px;
   }
 
   .rail__nav button {
     position: relative;
     display: flex;
-    padding: 9px 10px 9px 0;
+    padding: 9px 8px 9px 0;
     border: 0;
     appearance: none;
     align-items: baseline;
     gap: 12px;
-    color: #4a5651;
+    color: rgb(225 232 228 / 58%);
     background: transparent;
-    font-size: .82rem;
+    font-size: .78rem;
     letter-spacing: .04em;
     text-align: left;
     cursor: pointer;
@@ -445,7 +460,7 @@ html[data-state="opening"] .invitation {
   }
 
   .rail__nav button i {
-    font-size: .62rem;
+    font-size: .6rem;
     font-style: normal;
     font-weight: 600;
     letter-spacing: .14em;
@@ -454,18 +469,18 @@ html[data-state="opening"] .invitation {
 
   .rail__nav button:hover {
     padding-left: 6px;
-    color: var(--green-700);
+    color: var(--stone-100);
   }
 
   .rail__nav button:focus-visible {
-    outline: 2px solid var(--green-500);
+    outline: 2px solid var(--stone-400);
     outline-offset: 2px;
     border-radius: 2px;
   }
 
   .rail__nav button[aria-current="true"] {
     padding-left: 12px;
-    color: var(--green-700);
+    color: #fff;
     font-weight: 600;
   }
 
@@ -476,7 +491,7 @@ html[data-state="opening"] .invitation {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--green-500);
+    background: var(--stone-300);
     content: "";
     transform: translateY(-50%);
   }
@@ -485,7 +500,7 @@ html[data-state="opening"] .invitation {
     display: grid;
     padding: 18px 0 0;
     border: 0;
-    border-top: 1px solid rgb(23 60 47 / 12%);
+    border-top: 1px solid rgb(225 232 228 / 14%);
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -502,9 +517,19 @@ html[data-state="opening"] .invitation {
     flex-direction: row;
     justify-content: flex-start;
     gap: 10px;
-    font-size: .82rem;
+    color: rgb(236 240 238 / 76%);
+    font-size: .8rem;
     font-weight: 500;
     text-align: left;
+  }
+
+  .tool:hover {
+    color: #fff;
+    background: rgb(225 232 228 / 8%);
+  }
+
+  .tool:focus-visible {
+    outline-color: var(--stone-400);
   }
 
   .reader-toast {
@@ -515,7 +540,6 @@ html[data-state="opening"] .invitation {
 /* ------------------------------------------------------------------- motion */
 
 @media (prefers-reduced-motion: reduce) {
-  .design-page,
   .reader-bar,
   .reader-rail,
   .reader-toast,
@@ -523,35 +547,43 @@ html[data-state="opening"] .invitation {
   .rail__nav button {
     transition-duration: .01ms;
   }
+
+  .invitation-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 @media print {
   .invitation {
     display: block !important;
+    background: #fff;
   }
 
   .reader-progress,
   .reader-bar,
   .reader-rail,
-  .reader-toast {
+  .reader-toast,
+  .reader-stage::before {
     display: none !important;
   }
 
-  .reader-stage::before {
-    display: none !important;
+  .reader-stage {
+    min-height: 0;
+    background: #fff;
   }
 
   .reader {
     width: 100%;
     padding: 0;
-    gap: 0;
   }
 
-  .design-page {
+  .invitation-scroll {
     opacity: 1;
-    outline: none;
+    border: 0;
+    border-radius: 0;
     box-shadow: none;
     transform: none;
-    break-after: page;
   }
 }

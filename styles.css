@@ -164,7 +164,7 @@ html[data-state="opening"] .gate {
 .gate__bloom {
   position: absolute;
   inset: 0;
-  background: radial-gradient(72% 58% at 50% 46%, var(--paper) 0%, rgb(244 247 245 / 88%) 46%, rgb(228 232 229 / 72%) 100%);
+  background: radial-gradient(72% 58% at 50% 46%, #97a49d 0%, #315344 44%, #06170f 100%);
   opacity: 0;
   pointer-events: none;
 }

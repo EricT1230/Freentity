@@ -12,8 +12,8 @@ test('keeps the reading frame free of chrome so the approved artwork stays exact
   await openInvitation(page, { width: 390, height: 844 });
 
   const reader = page.locator('#invitation-reader');
-  await expect(reader.locator(':scope > *')).toHaveCount(4);
-  await expect(reader.locator(':scope > .design-page')).toHaveCount(4);
+  await expect(reader.locator(':scope > *')).toHaveCount(1);
+  await expect(reader.locator(':scope > .invitation-scroll')).toHaveCount(1);
   expect((await reader.innerText()).trim()).toBe('');
 
   for (const selector of ['.reader-progress', '.reader-bar', '.reader-rail', '.reader-toast']) {
@@ -38,6 +38,7 @@ test('tracks reading progress from the top of the invitation to the end', async 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(progress).toHaveClass(/is-active/);
   await expect.poll(readProgress).toBeGreaterThan(0.9);
+  await expect(page.locator('[data-section-label]')).toHaveText('VENUE');
 
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(progress).not.toHaveClass(/is-active/);
@@ -63,9 +64,9 @@ test('reveals an accessible tool dock on phones without covering the last page',
 
   // The dock is fixed, so the reader keeps enough bottom padding to clear it at rest.
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const lastPage = await page.locator('[data-page="4"]').boundingBox();
+  const artwork = await page.locator('.invitation-scroll').boundingBox();
   const dock = await rail.boundingBox();
-  expect(lastPage.y + lastPage.height).toBeLessThanOrEqual(dock.y);
+  expect(artwork.y + artwork.height).toBeLessThanOrEqual(dock.y);
 });
 
 test('reveals the header only past the cover and tracks the current section', async ({ page }) => {
@@ -78,9 +79,9 @@ test('reveals the header only past the cover and tracks the current section', as
   await expect(bar).not.toHaveClass(/is-visible/);
   await expect(label).toHaveText('邀請');
 
-  await page.locator('[data-page="3"]').evaluate((page3) => page3.scrollIntoView({ block: 'start' }));
+  await page.locator('[data-page="2"]').evaluate((page2) => page2.scrollIntoView({ block: 'start' }));
   await expect(bar).toHaveClass(/is-visible/);
-  await expect.poll(() => label.textContent()).toBe('RUNDOWN');
+  await expect.poll(() => label.textContent()).toBe("WHAT'S NEW");
   await expect(page.locator('.reader-bar__brand')).toHaveAttribute('href', 'https://freentity.com/');
 
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -143,8 +144,9 @@ test('jumps between sections from the desktop rail and marks the current page', 
   await page.locator('.rail__nav button[data-goto="3"]').click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
 
-  const thirdPage = await page.locator('[data-page="3"]').boundingBox();
-  expect(Math.abs(thirdPage.y)).toBeLessThan(4);
+  const thirdAnchor = await page.locator('[data-page="3"]').boundingBox();
+  expect(thirdAnchor.y).toBeGreaterThanOrEqual(60);
+  expect(thirdAnchor.y).toBeLessThanOrEqual(76);
   await expect(page.locator('.rail__nav button[data-goto="3"]')).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('.rail__nav button[aria-current="true"]')).toHaveCount(1);
 });

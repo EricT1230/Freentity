@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-const expectedInvitationAssetSha256 = '61301fe1fff7623c45ac11e3c482663783337af6d284bb829f4627cd5e0f7f76';
+const expectedInvitationAssetSha256 = '98da95e397d45f6c75ebd78fe5dc1ad1a070e0ddeb97d2d4b0dd8006f54cbff4';
+const expectedResponsiveInvitationAssetSha256 = 'f77119dedb2ece3f9d637ba67e20a27e2ce3d62d62cf0f14ef5f127a654f07ea';
 const expectedOfficialLogoSha256 = '2582061e74f0166c3dd4151f878271c7b0e5825add755646af06a30e41fb9a4d';
-const expectedEnvelopeCardSha256 = 'f3e6869dc3741caebc657c58bf42b141e71c4c8dd66cba9dc442b8b59d52a9f6';
-const expectedSocialPreviewSha256 = '1076d31968bf3b25ebc3efe415bea4e0efb7ab6b148bae9db8e7a648b2d98f24';
+const expectedEnvelopeCardSha256 = '88ba4ac271c6952aa5f35d875cdfebf4e97d2e415895e3d58aca19b567c5a6ac';
+const expectedSocialPreviewSha256 = '88ba4ac271c6952aa5f35d875cdfebf4e97d2e415895e3d58aca19b567c5a6ac';
 
 async function openInvitation(page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -17,6 +18,9 @@ async function openInvitation(page) {
 test('ships the exact invitation artwork rendered from the approved PDF', async () => {
   const asset = await readFile('assets/figma-invitation.jpeg');
   expect(createHash('sha256').update(asset).digest('hex')).toBe(expectedInvitationAssetSha256);
+
+  const responsiveAsset = await readFile('assets/figma-invitation-1170.jpeg');
+  expect(createHash('sha256').update(responsiveAsset).digest('hex')).toBe(expectedResponsiveInvitationAssetSha256);
 });
 
 test('ships the official full-color Freentity logo without changing its pixels', async () => {
@@ -37,7 +41,7 @@ test('ships the supplied social preview artwork without changing its pixels', as
 
 test('ships a cache-busting copy of the supplied social preview artwork', async () => {
   const originalAsset = await readFile('assets/social-preview.jpg');
-  const versionedAsset = await readFile('assets/social-preview-20260828.jpg');
+  const versionedAsset = await readFile('assets/social-preview-20260830.jpg');
 
   expect(createHash('sha256').update(versionedAsset).digest('hex')).toBe(expectedSocialPreviewSha256);
   expect(versionedAsset.equals(originalAsset)).toBe(true);
@@ -57,38 +61,47 @@ test('keeps the complete invitation transcript available to assistive technology
   await expect(transcript).toContainText('帆益科技 陳定閎・陳薇 敬邀');
 });
 
-test('loads every reading page from the repository-local invitation asset', async ({ page, request }) => {
-  const asset = await request.get('./assets/figma-invitation.jpeg');
-  expect(asset.ok()).toBe(true);
-  expect(asset.headers()['content-type']).toBe('image/jpeg');
+test('loads the approved invitation as one continuous responsive artwork', async ({ page, request }) => {
+  for (const path of [
+    './assets/figma-invitation-1170.jpeg',
+    './assets/figma-invitation.jpeg',
+  ]) {
+    const asset = await request.get(path);
+    expect(asset.ok(), path).toBe(true);
+    expect(asset.headers()['content-type']).toBe('image/jpeg');
+  }
 
   await openInvitation(page);
-  const readingPages = page.locator('.design-page');
-  await expect(readingPages.locator('img[src="./assets/figma-invitation.jpeg"]')).toHaveCount(4);
-
-  for (let index = 0; index < 4; index += 1) {
-    const readingPage = readingPages.nth(index);
-    const image = readingPage.locator('img');
-    await readingPage.scrollIntoViewIfNeeded();
-    await expect.poll(
-      () => image.evaluate((element) => ({
-        complete: element.complete,
-        naturalWidth: element.naturalWidth,
-        naturalHeight: element.naturalHeight,
-      })),
-      { timeout: 10_000 },
-    ).toEqual({ complete: true, naturalWidth: 1174, naturalHeight: 4096 });
-  }
+  const artwork = page.locator('#invitation-reader > .invitation-scroll');
+  await expect(artwork).toHaveCount(1);
+  await expect(artwork.locator('img')).toHaveAttribute('src', './assets/figma-invitation.jpeg');
+  await expect(artwork.locator('img')).toHaveAttribute(
+    'srcset',
+    './assets/figma-invitation-1170.jpeg 1170w, ./assets/figma-invitation.jpeg 2340w',
+  );
+  await expect.poll(
+    () => artwork.locator('img').evaluate((element) => ({
+      complete: element.complete,
+      naturalWidth: element.naturalWidth,
+      naturalHeight: element.naturalHeight,
+    })),
+    { timeout: 10_000 },
+  ).toMatchObject({ complete: true });
+  const imageRatio = await artwork.locator('img').evaluate(
+    (element) => element.naturalHeight / element.naturalWidth,
+  );
+  expect(imageRatio).toBeCloseTo(11245 / 2340, 2);
 });
 
-test('shows all four exact design pages when JavaScript is disabled', async ({ browser }) => {
+test('shows the complete continuous invitation when JavaScript is disabled', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4173/Freentity/');
   await expect(page.locator('#invitation-gate')).toBeHidden();
   await expect(page.locator('#invitation')).toBeVisible();
-  await expect(page.locator('.design-page')).toHaveCount(4);
-  await page.locator('[data-page="4"]').scrollIntoViewIfNeeded();
+  await expect(page.locator('.invitation-scroll')).toHaveCount(1);
+  await page.locator('.invitation-scroll').scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await context.close();
 });

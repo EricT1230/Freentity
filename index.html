@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f2f4f2">
+    <meta name="theme-color" content="#06170f">
     <meta name="description" content="帆益科技新廠落成開幕暨技術發表邀請函">
     <link rel="canonical" href="https://freentity.pages.dev/">
     <meta property="og:locale" content="zh_TW">
@@ -12,8 +12,8 @@
     <meta property="og:title" content="帆益科技｜新廠落成開幕暨技術發表">
     <meta property="og:description" content="誠摯邀請您參與帆益科技新廠落成開幕暨技術發表。">
     <meta property="og:url" content="https://freentity.pages.dev/">
-    <meta property="og:image" content="https://freentity.pages.dev/assets/social-preview-20260828.jpg">
-    <meta property="og:image:secure_url" content="https://freentity.pages.dev/assets/social-preview-20260828.jpg">
+    <meta property="og:image" content="https://freentity.pages.dev/assets/social-preview-20260830.jpg">
+    <meta property="og:image:secure_url" content="https://freentity.pages.dev/assets/social-preview-20260830.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1920">
     <meta property="og:image:height" content="1080">
@@ -21,7 +21,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="帆益科技｜新廠落成開幕暨技術發表">
     <meta name="twitter:description" content="誠摯邀請您參與帆益科技新廠落成開幕暨技術發表。">
-    <meta name="twitter:image" content="https://freentity.pages.dev/assets/social-preview-20260828.jpg">
+    <meta name="twitter:image" content="https://freentity.pages.dev/assets/social-preview-20260830.jpg">
     <meta name="twitter:image:alt" content="帆益科技新廠落成開幕暨技術發表邀請函封面">
     <title>帆益科技｜新廠落成開幕暨技術發表</title>
     <link rel="icon" href="./assets/freentity-logo.png" type="image/png">
@@ -43,13 +43,13 @@
           if (root.dataset.invitationReady === 'true') return;
 
           root.dataset.state = 'open';
-          themeColor?.setAttribute('content', '#f2f4f2');
+          themeColor?.setAttribute('content', '#06170f');
           const gate = document.querySelector('#invitation-gate');
           const invitation = document.querySelector('#invitation');
           gate?.setAttribute('aria-hidden', 'true');
           invitation?.setAttribute('aria-hidden', 'false');
           invitation?.removeAttribute('inert');
-          document.querySelectorAll('.design-page').forEach((page) => page.classList.add('is-visible'));
+          document.querySelector('.invitation-scroll')?.classList.add('is-visible');
         }, 4200);
       })();
     </script>
@@ -57,7 +57,7 @@
       <style>
         #invitation-gate { display: none !important; }
         #invitation { display: block !important; }
-        .design-page { opacity: 1 !important; transform: none !important; }
+        .invitation-scroll { opacity: 1 !important; transform: none !important; }
         .reader-rail { opacity: 1 !important; transform: none !important; }
       </style>
     </noscript>
@@ -78,7 +78,7 @@
                 <span class="envelope__interior"></span>
 
                 <span class="envelope__letter">
-                  <img src="./assets/envelope-card.jpg" width="1280" height="720" alt="" fetchpriority="high">
+                  <img src="./assets/envelope-card.jpg" width="1920" height="1080" alt="" fetchpriority="high">
                 </span>
 
                 <span class="envelope__inner-shadow"></span>
@@ -204,7 +204,7 @@
             </div>
           </dl>
 
-          <nav class="rail__nav" aria-label="頁面導覽">
+          <nav class="rail__nav" aria-label="邀請函段落導覽">
             <button type="button" data-goto="1"><i>01</i><span>邀請</span></button>
             <button type="button" data-goto="2"><i>02</i><span>WHAT'S NEW</span></button>
             <button type="button" data-goto="3"><i>03</i><span>RUNDOWN</span></button>
@@ -242,57 +242,22 @@
         </aside>
 
         <div id="invitation-reader" class="reader">
-          <section
-            class="design-page"
-            data-page="1"
-            data-slice-start="0"
-            data-slice-end="339"
-            aria-label="邀請函第 1 頁，共 4 頁"
-            style="--page-ratio: 402 / 339; --image-height: 414.1593%; --image-top: 0%;"
-          >
-            <div class="design-page__crop">
-              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" draggable="false">
-            </div>
-          </section>
-
-          <section
-            class="design-page"
-            data-page="2"
-            data-slice-start="339"
-            data-slice-end="724"
-            aria-label="邀請函第 2 頁，共 4 頁"
-            style="--page-ratio: 402 / 385; --image-height: 364.6753%; --image-top: -88.0519%;"
-          >
-            <div class="design-page__crop">
-              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
-            </div>
-          </section>
-
-          <section
-            class="design-page"
-            data-page="3"
-            data-slice-start="724"
-            data-slice-end="1000"
-            aria-label="邀請函第 3 頁，共 4 頁"
-            style="--page-ratio: 402 / 276; --image-height: 508.6957%; --image-top: -262.3188%;"
-          >
-            <div class="design-page__crop">
-              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
-            </div>
-          </section>
-
-          <section
-            class="design-page"
-            data-page="4"
-            data-slice-start="1000"
-            data-slice-end="1404"
-            aria-label="邀請函第 4 頁，共 4 頁"
-            style="--page-ratio: 402 / 404; --image-height: 347.5248%; --image-top: -247.5248%;"
-          >
-            <div class="design-page__crop">
-              <img src="./assets/figma-invitation.jpeg" width="1174" height="4096" alt="" loading="lazy" draggable="false">
-            </div>
-          </section>
+          <figure class="invitation-scroll" aria-label="帆益科技新廠落成開幕暨技術發表完整邀請函">
+            <img
+              src="./assets/figma-invitation.jpeg"
+              srcset="./assets/figma-invitation-1170.jpeg 1170w, ./assets/figma-invitation.jpeg 2340w"
+              sizes="(max-width: 719px) calc(100vw - 24px), (max-width: 1199px) min(820px, calc(100vw - 64px)), 820px"
+              width="2340"
+              height="11245"
+              alt=""
+              fetchpriority="high"
+              draggable="false"
+            >
+            <span id="section-invite" class="invitation-anchor" data-page="1" style="--anchor-y: 0%;" aria-hidden="true"></span>
+            <span id="section-whats-new" class="invitation-anchor" data-page="2" style="--anchor-y: 56.5%;" aria-hidden="true"></span>
+            <span id="section-rundown" class="invitation-anchor" data-page="3" style="--anchor-y: 65.3%;" aria-hidden="true"></span>
+            <span id="section-venue" class="invitation-anchor" data-page="4" style="--anchor-y: 84.4%;" aria-hidden="true"></span>
+          </figure>
         </div>
       </div>
 
