@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-const expectedInvitationAssetSha256 = '98da95e397d45f6c75ebd78fe5dc1ad1a070e0ddeb97d2d4b0dd8006f54cbff4';
-const expectedResponsiveInvitationAssetSha256 = 'f77119dedb2ece3f9d637ba67e20a27e2ce3d62d62cf0f14ef5f127a654f07ea';
+const expectedInvitationAssetSha256 = '33d643fa1e3cd38dbdba94e20e42cd8611dd5c19d809ecaee114bac3b44b345b';
+const expectedResponsiveInvitationAssetSha256 = '06f8b5ecda5761c818cd0b895652fe9e1975fc0a974285a5db14a3302422eabd';
 const expectedOfficialLogoSha256 = '2582061e74f0166c3dd4151f878271c7b0e5825add755646af06a30e41fb9a4d';
 const expectedEnvelopeCardSha256 = '88ba4ac271c6952aa5f35d875cdfebf4e97d2e415895e3d58aca19b567c5a6ac';
 const expectedSocialPreviewSha256 = '88ba4ac271c6952aa5f35d875cdfebf4e97d2e415895e3d58aca19b567c5a6ac';
@@ -54,11 +54,11 @@ test('keeps the complete invitation transcript available to assistive technology
   await expect(transcript).toContainText('新廠落成開幕暨技術發表');
   await expect(transcript).toContainText('誠摯邀請你，與我們共同開啟嶄新篇章');
   await expect(transcript).toContainText('2026 / 10 / 04(日) 14:00 起，自由入場');
-  await expect(transcript).toContainText('320 桃園市中壢區中園路 192 號 5 樓之 1、2');
-  await expect(transcript).toContainText('無須事先回覆');
+  await expect(transcript).toContainText('320 桃園市中壢區中園路 192 號 5 樓之一');
+  await expect(transcript).not.toContainText('無須事先回覆');
   await expect(transcript).toContainText('14:00 開放入場、迎賓');
   await expect(transcript).toContainText('16:30 活動結束');
-  await expect(transcript).toContainText('帆益科技 陳定閎・陳薇 敬邀');
+  await expect(transcript).toContainText('帆益科技 陳定閎・陳薇・全體夥伴 敬邀');
 });
 
 test('loads the approved invitation as one continuous responsive artwork', async ({ page, request }) => {

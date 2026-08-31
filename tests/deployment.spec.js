@@ -102,6 +102,7 @@ test('offers the event as a repository-local calendar download', async ({ page, 
   expect(calendarBody).toContain('DTSTART;TZID=Asia/Taipei:20261004T140000');
   expect(calendarBody).toContain('DTEND;TZID=Asia/Taipei:20261004T163000');
   expect(calendarBody).toContain('SUMMARY:帆益科技新廠落成開幕暨技術發表');
+  expect(calendarBody).toContain('LOCATION:320 桃園市中壢區中園路 192 號 5 樓之一');
 });
 
 test('opens every outbound link in a rel-protected new tab', async ({ page }) => {

@@ -112,6 +112,9 @@ test('keeps the rail off screens too short to hold it, falling back to the heade
 test('keeps the tall desktop rail fully on screen', async ({ page }) => {
   await openInvitation(page, { width: 1440, height: 1000 });
 
+  await expect(page.locator('.rail__facts')).toContainText('中園路 192 號 5 樓之一');
+  await expect(page.locator('.rail__facts')).not.toContainText('1、2');
+
   const rail = await page.locator('.reader-rail').boundingBox();
   const brand = await page.locator('.rail__brand').boundingBox();
   expect(rail.y).toBeGreaterThanOrEqual(0);
