@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-const expectedInvitationAssetSha256 = '33d643fa1e3cd38dbdba94e20e42cd8611dd5c19d809ecaee114bac3b44b345b';
-const expectedResponsiveInvitationAssetSha256 = '06f8b5ecda5761c818cd0b895652fe9e1975fc0a974285a5db14a3302422eabd';
+const expectedInvitationAssetSha256 = '14336c46d02c0a720eae5d4c7dc5ebc2f19bfc000a9c651676577e06b1f069b7';
+const expectedResponsiveInvitationAssetSha256 = 'fbbcca1c1bf741d1f3f2e0c42cd3e23b94a74f6f3530a7ed9b58319f1f2a7851';
 const expectedOfficialLogoSha256 = '2582061e74f0166c3dd4151f878271c7b0e5825add755646af06a30e41fb9a4d';
 const expectedEnvelopeCardSha256 = '88ba4ac271c6952aa5f35d875cdfebf4e97d2e415895e3d58aca19b567c5a6ac';
 const expectedSocialPreviewSha256 = '88ba4ac271c6952aa5f35d875cdfebf4e97d2e415895e3d58aca19b567c5a6ac';

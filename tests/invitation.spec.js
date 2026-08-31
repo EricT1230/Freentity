@@ -38,7 +38,7 @@ test('presents the closed envelope front with a floating Open invitation', async
   await expect(page.locator('.envelope-front__logo')).toHaveAttribute('src', envelopeLogoAsset);
   await expect(page.locator('.envelope-front__logo')).toHaveJSProperty('naturalWidth', 292);
   await expect(page.locator('.envelope-front__logo')).toHaveJSProperty('naturalHeight', 292);
-  await expect(page.locator('.envelope-front__name')).toHaveText('Freentity');
+  await expect(page.locator('.envelope-front__name')).toHaveText('FreEntity');
   await expect(page.locator('.envelope-front__motif')).toHaveCount(0);
   await expect(page.locator('.envelope-front__emboss')).toHaveCount(1);
   await expect(page.locator('.envelope__letter img')).toHaveAttribute('src', envelopeCardAsset);

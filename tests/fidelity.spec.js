@@ -30,5 +30,5 @@ test('renders the approved long invitation without crop, filter, or reconstructi
   expect(rendering.filter).toBe('none');
   expect(rendering.opacity).toBe('1');
   expect(rendering.objectFit).toBe('fill');
-  expect(rendering.renderedRatio).toBeCloseTo(11245 / 2340, 3);
+  expect(rendering.renderedRatio).toBeCloseTo(5623 / 1170, 3);
 });
